@@ -1,89 +1,119 @@
 ---
-const response = await fetch("https://script.google.com/macros/s/AKfycbzkRrjtx5Uj1nZPXOXMtjptStjUYdjUyqw1hqlK02aiTxb5j6i2WXO_fSPICJS7m7K0vw/exec");
-const xmlText = await response.text();
+// Тут у майбутньому можна підтягувати дані з Netlify Blobs або API
+const familyTasks = [
+  { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі", priority: "високий" },
+  { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах на вівторок", status: "виконано", priority: "середній" },
+  { id: 3, assignee: "Всі", task: "Перевірити стан інструментів перед виїздом", status: "план", priority: "низький" }
+];
 
-const items = [];
-const itemMatches = xmlText.matchAll(/<item>([\s\S]*?)<\/item>/g);
-
-for (const match of itemMatches) {
-  const itemContent = match[1];
-
-  const getTagContent = (tag) => {
-    const m = itemContent.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i'));
-    return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
-  };
-
-  const enclosureMatch = itemContent.match(/<enclosure[^>]*url="([^"]+)"[^>]*>/i);
-  const audioUrl = enclosureMatch ? enclosureMatch[1] : '';
-
-  if (audioUrl) {
-    items.push({
-      title: getTagContent('title') || 'Без назви',
-      description: getTagContent('description') || 'Опис відсутній',
-      audioUrl: audioUrl,
-      date: getTagContent('pubDate') ? new Date(getTagContent('pubDate')).toLocaleDateString('uk-UA') : ''
-    });
-  }
-}
+const upcomingEvents = [
+  { date: "Сьогодні, 18:00", title: "Розмова з волонтером (ENGin)", type: "навчання" },
+  { date: "Завтра", title: "Планування тижня", type: "організація" }
+];
 ---
 
 <html lang="uk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Мої подкасти</title>
+    <title>Особистий Дашборд</title>
   </head>
-  <body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-8 font-sans">
+  <body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 font-sans">
     
-    <main class="max-w-3xl mx-auto">
-      <header class="mb-10 text-center md:text-left">
-        <h1 class="text-4xl font-extrabold text-white mb-2">Черга подкастів</h1>
-        <p class="text-gray-400">Синхронізація з хмарою</p>
+    <main class="max-w-5xl mx-auto space-y-8">
+      
+      <!-- Шапка дашборду -->
+      <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white">Мій Хаб</h1>
+          <p class="text-slate-400 text-sm mt-1">Оперативний центр керування задачами та подіями</p>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-sm font-mono text-emerald-400">
+          🟢 Система активна (Netlify SSR)
+        </div>
       </header>
 
-      {items.length === 0 ? (
-        <div class="bg-gray-800 p-6 rounded-2xl text-center border border-gray-700">
-          <p class="text-gray-400">Не вдалося знайти епізоди у стрічці.</p>
-        </div>
-      ) : (
-        <div class="space-y-6">
-          {items.map((episode) => (
-            <article class="bg-gray-800 p-5 md:p-6 rounded-2xl shadow-lg border border-gray-700 hover:border-gray-500 transition-all">
-              
-              <div class="mb-4">
-                <div class="flex justify-end items-center mb-1">
-                  <span class="text-xs text-gray-500 font-mono">
-                    {episode.date}
-                  </span>
+      <!-- Основна сітка дашборду -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Блок 1: Задачі для сім'ї (займає 2 колонки) -->
+        <section class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                👥 Сімейні задачі та доручення
+              </h2>
+              <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full font-medium">
+                Активні
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              {familyTasks.map((item) => (
+                <div class="bg-slate-950/60 border border-slate-800/80 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-700 transition-colors">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+                        {item.assignee}
+                      </span>
+                      <span class={`text-xs px-2 py-0.5 rounded font-mono ${
+                        item.status === 'виконано' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <p class="text-slate-200 font-medium text-base">{item.task}</p>
+                  </div>
                 </div>
-                
-                <h2 class="text-xl md:text-2xl font-bold text-blue-100">{episode.title}</h2>
-                <p class="text-gray-400 mt-2 text-sm leading-relaxed" set:html={episode.description}></p>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <!-- Стандартний плеєр -->
-              <audio controls preload="none" class="w-full mt-4 mb-3">
-                <source src={episode.audioUrl} type="audio/mp4" />
-                <source src={episode.audioUrl} type="audio/mpeg" />
-                Ваш браузер не підтримує аудіо елемент.
-              </audio>
+          <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500 flex justify-between">
+            <span>Інтеграція з чатом: очікування вебхука</span>
+            <span class="hover:text-slate-300 cursor-pointer">+ Додати задачу</span>
+          </div>
+        </section>
 
-              <!-- Кнопка прямого завантаження / відкриття файлу -->
-              <div>
-                <a 
-                  href={episode.audioUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  class="inline-block bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-                >
-                  📥 Завантажити / Слухати в зовнішньому плеєрі
-                </a>
-              </div>
-              
-            </article>
-          ))}
+        <!-- Блок 2: Календар / Події (1 колонка) -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl flex flex-col justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              📅 Найближчі події
+            </h2>
+
+            <div class="space-y-3">
+              {upcomingEvents.map((event) => (
+                <div class="bg-slate-950/60 border border-slate-800/80 p-3.5 rounded-xl">
+                  <span class="text-xs text-indigo-400 font-mono block mb-1">{event.date}</span>
+                  <h3 class="text-slate-200 font-semibold text-sm">{event.title}</h3>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500 text-right">
+            <span>Синхронизовано</span>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Блок 3: Швидкі нотатки (на всю ширину внизу) -->
+      <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl">
+        <h2 class="text-xl font-bold text-white mb-4">💡 Швидка нотатка / Думка</h2>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input 
+            type="text" 
+            placeholder="Введіть текст для фіксації..." 
+            class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-indigo-500 flex-grow text-sm"
+          />
+          <button class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-3 rounded-xl text-sm transition-colors cursor-pointer">
+            Зберегти у хмару
+          </button>
         </div>
-      )}
+      </section>
+
     </main>
 
   </body>
