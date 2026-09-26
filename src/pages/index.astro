@@ -1,21 +1,82 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import ContextAlert from '../components/ContextAlert.astro';
-import Markdown from '../components/Markdown.astro';
+import { XMLParser } from 'fast-xml-parser'; // Цей пакет вже зазвичай є в транзитивних залежностях, але якщо ні, скористаємося чистим fetch + регулярками нижче
 
-const explainer = `
-An Astro website can go way beyond static pages - on the right platform.
+// Або ще простіше: чистий fetch та розбір без жодних залежностей взагалі
+const response = await fetch("https://script.google.com/macros/s/AKfycbzkRrjtx5Uj1nZPXOXMtjptStjUYdjUyqw1hqlK02aiTxb5j6i2WXO_fSPICJS7m7K0vw/exec");
+const xmlText = await response.text();
 
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
+// Простий ручний парсинг XML-стрічки за допомогою RegExp (працює завжди й скрізь без бібліотек)
+const items = [];
+const itemMatches = xmlText.matchAll(/<item>([\s\S]*?)<\/item>/g);
+
+for (const match of itemMatches) {
+  const itemContent = match[1];
+
+  const getTagContent = (tag) => {
+    const m = itemContent.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i'));
+    return m ? m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+  };
+
+  // Витягуємо посилання на аудіо з атрибута url тегу enclosure
+  const enclosureMatch = itemContent.match(/<enclosure[^>]*url="([^"]+)"[^>]*>/i);
+  const audioUrl = enclosureMatch ? enclosureMatch[1] : '';
+
+  if (audioUrl) {
+    items.push({
+      title: getTagContent('title') || 'Без назви',
+      description: getTagContent('description') || 'Опис відсутній',
+      audioUrl: audioUrl,
+      date: getTagContent('pubDate') ? new Date(getTagContent('pubDate')).toLocaleDateString('uk-UA') : ''
+    });
+  }
+}
 ---
 
-<Layout title="Welcome to Astro.">
-    <ContextAlert class="mb-8" />
-    <h1 class="mb-10">Netlify Platform Starter for Astro</h1>
-    <Markdown content={explainer} class="mb-10 text-lg" />
-    <p>
-        <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg sm:min-w-64">Read the Docs</a>
-    </p>
-</Layout>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Мої подкасти з AntennaPod</title>
+  </head>
+  <body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-8 font-sans">
+    
+    <main class="max-w-3xl mx-auto">
+      <header class="mb-10 text-center md:text-left">
+        <h1 class="text-4xl font-extrabold text-white mb-2">Мої подкасти</h1>
+        <p class="text-gray-400">Пряма синхронізація з вашим RSS</p>
+      </header>
+
+      {items.length === 0 ? (
+        <div class="bg-gray-800 p-6 rounded-2xl text-center border border-gray-700">
+          <p class="text-gray-400">Не вдалося знайти епізоди у стрічці.</p>
+        </div>
+      ) : (
+        <div class="space-y-6">
+          {items.map((episode) => (
+            <article class="bg-gray-800 p-5 md:p-6 rounded-2xl shadow-lg border border-gray-700 hover:border-gray-500 transition-all">
+              
+              <div class="mb-4">
+                <div class="flex justify-end items-center mb-1">
+                  <span class="text-xs text-gray-500 font-mono">
+                    {episode.date}
+                  </span>
+                </div>
+                
+                <h2 class="text-xl md:text-2xl font-bold text-blue-100">{episode.title}</h2>
+                <p class="text-gray-400 mt-2 text-sm leading-relaxed" set:html={episode.description}></p>
+              </div>
+
+              <!-- Вбудований аудіоплеєр -->
+              <audio controls class="w-full mt-4" preload="metadata">
+                <source src={episode.audioUrl} type="audio/mpeg" />
+                Ваш браузер не підтримує аудіо елемент.
+              </audio>
+              
+            </article>
+          ))}
+        </div>
+      )}
+    </main>
+
+  </body>
+</html>
