@@ -1,23 +1,47 @@
 ---
-// 1. Динамічне завантаження погоди (наприклад, для Карпатського регіону / Косівщини)
-let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—" };
+// Детальний запит погоди з прогнозом на 7 днів (для координат Карпатського регіону / Косівщини)
+let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—", daily: [] };
 try {
-  // Координати приблизно для Косівського району
-  const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m");
-  const weatherData = await weatherRes.json();
-  if (weatherData && weatherData.current) {
+  const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto");
+  const data = await weatherRes.json();
+  
+  if (data && data.current) {
+    // Проста інтерпретація кодів погоди WMO
+    const getWeatherDesc = (code) => {
+      if (code === 0) return "Ясно ☀️";
+      if (code <= 3) return "Мінлива хмарність ⛅";
+      if (code <= 48) return "Туман 🌫️";
+      if (code <= 67) return "Дощ 🌧️";
+      if (code <= 77) return "Сніг ❄️";
+      return "Змінна погода 🌦️";
+    };
+
+    const dailyForecast = [];
+    if (data.daily && data.daily.time) {
+      const daysOfWeek = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+      for (let i = 0; i < data.daily.time.length; i++) {
+        const dateObj = new Date(data.daily.time[i]);
+        dailyForecast.push({
+          day: i === 0 ? 'Сьогодні' : daysOfWeek[dateObj.getDay()],
+          max: Math.round(data.daily.temperature_2m_max[i]),
+          min: Math.round(data.daily.temperature_2m_min[i]),
+          desc: getWeatherDesc(data.daily.weather_code[i])
+        });
+      }
+    }
+
     weather = {
       location: "Карпати",
-      temp: `${Math.round(weatherData.current.temperature_2m)}°C`,
-      condition: weatherData.current.temperature_2m > 0 ? "Ясно / Хмарно" : "Прохолодно",
-      wind: `${weatherData.current.wind_speed_10m} м/с`
+      temp: `${Math.round(data.current.temperature_2m)}°C`,
+      condition: getWeatherDesc(data.current.weather_code),
+      wind: `${data.current.wind_speed_10m} м/с`,
+      daily: dailyForecast
     };
   }
 } catch (e) {
-  console.error("Помилка погоди:", e);
+  console.error("Помилка завантаження погоди:", e);
 }
 
-// 2. Статичні поки що задачі (сюди можна підставити ваш Google Apps Script для завдань)
 const familyTasks = [
   { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
   { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
@@ -98,12 +122,33 @@ const upcomingEvents = [
       .badge-green { background: #064e3b; color: #a7f3d0; }
       .badge-blue { background: #1e3a8a; color: #bfdbfe; }
       
-      .weather-box {
+      /* Погода */
+      .weather-current {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #334155;
       }
-      .temp { font-size: 28px; font-weight: bold; color: #38bdf8; }
+      .temp { font-size: 32px; font-weight: bold; color: #38bdf8; }
+      
+      .forecast-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        text-align: center;
+      }
+      .forecast-day {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 8px 4px;
+      }
+      .forecast-day-name { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
+      .forecast-temps { font-size: 12px; font-weight: bold; margin-top: 4px; }
+      .temp-max { color: #f87171; }
+      .temp-min { color: #60a5fa; }
 
       input[type="text"] {
         width: 100%;
@@ -136,20 +181,41 @@ const upcomingEvents = [
         <p style="color: #94a3b8; font-size: 14px; margin: 0;">Оперативний центр</p>
       </div>
 
-      <!-- Погода в реальному часі -->
-      <div class="card weather-box">
-        <div>
-          <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Погода • {weather.location}</div>
-          <div style="font-size: 14px; font-weight: 500; margin-top: 2px;">{weather.condition} (віт. {weather.wind})</div>
+      <!-- Погода: поточна + прогноз на 7 днів -->
+      <div class="card">
+        <h2>🌤️ Погода • {weather.location}</h2>
+        
+        <div class="weather-current">
+          <div>
+            <div style="font-size: 16px; font-weight: 600; color: #fff;">{weather.condition}</div>
+            <div style="font-size: 13px; color: #94a3b8; margin-top: 2px;">Вітер: {weather.wind}</div>
+          </div>
+          <div class="temp">{weather.temp}</div>
         </div>
-        <div class="temp">{weather.temp}</div>
+
+        <!-- 7 днів прогнозу -->
+        <div class="forecast-grid">
+          {weather.daily.map(day => (
+            <div class="forecast-day">
+              <div class="forecast-day-name">{day.day}</div>
+              <div style="font-size: 14px;" title={day.desc}>
+                {day.desc.includes('☀️') ? '☀️' : day.desc.includes('⛅') ? '⛅' : day.desc.includes('🌧️') ? '🌧️' : '🌥️'}
+              </div>
+              <div class="forecast-temps">
+                <span class="temp-max">{day.max}°</span>
+                <span style="color: #64748b; font-weight: normal;">/</span>
+                <span class="temp-min">{day.min}°</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <!-- Сімейні задачі з інтерактивними фільтрами -->
+      <!-- Сімейні задачі з фільтрами -->
       <div class="card">
         <h2>👥 Сімейні задачі</h2>
         
-        <div class="filters" id="filter-container">
+        <div class="filters">
           <button class="filter-btn active" data-filter="all">Усі</button>
           <button class="filter-btn" data-filter="в процесі">В процесі</button>
           <button class="filter-btn" data-filter="план">План</button>
@@ -189,7 +255,6 @@ const upcomingEvents = [
 
     </div>
 
-    <!-- Клієнтський скрипт для роботи фільтрів та нотаток прямо в браузері -->
     <script>
       // Фільтрація завдань
       const filterButtons = document.querySelectorAll('.filter-btn');
@@ -212,7 +277,7 @@ const upcomingEvents = [
         });
       });
 
-      // Збереження нотатки в локальне сховище браузера (або можна підключити хмару)
+      // Збереження нотатки
       const saveBtn = document.getElementById('save-note');
       const noteInput = document.getElementById('note-input') as HTMLInputElement;
 
