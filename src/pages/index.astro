@@ -1,5 +1,5 @@
 ---
-// 1. Динамічне завантаження погоди для Карпатського регіону
+// Динамічне завантаження погоди для Карпатського регіону
 let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—" };
 try {
   const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m");
@@ -8,7 +8,7 @@ try {
     weather = {
       location: "Карпати",
       temp: `${Math.round(weatherData.current.temperature_2m)}°C`,
-      condition: weatherData.current.temperature_2m > 0 ? "Мінлива хмарність" : "Прохолодно",
+      condition: "Мінлива хмарність",
       wind: `${weatherData.current.wind_speed_10m} м/с`
     };
   }
@@ -16,7 +16,6 @@ try {
   console.error("Помилка погоди:", e);
 }
 
-// 2. Початкові сімейні задачі
 const familyTasks = [
   { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
   { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
@@ -34,16 +33,11 @@ const upcomingEvents = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Мій Хаб • Оперативний центр</title>
-    <style>
-      /* Додаткові дрібні стилі для плавних переходів фільтрів */
-      .task-item {
-        transition: all 0.2s ease-in-out;
-      }
-    </style>
+    <!-- Підключаємо Tailwind CSS через CDN, щоб стилі гарантовано спрацювали -->
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-6 font-sans antialiased">
     
-    <!-- Головний контейнер на всю ширину екрана з обмеженням 1600px -->
     <main class="max-w-[1600px] mx-auto">
       
       <!-- Шапка -->
@@ -55,7 +49,7 @@ const upcomingEvents = [
       <!-- Сітка дашборду на всю ширину (3 колонки на ноутбуках) -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <!-- БЛОК 1: ПОГОДА (1 колонка) -->
+        <!-- БЛОК 1: ПОГОДА -->
         <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
           <div>
             <div class="flex items-center space-x-2 mb-3">
@@ -112,7 +106,7 @@ const upcomingEvents = [
           </div>
         </section>
 
-        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ (2 колонки) -->
+        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ -->
         <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -145,7 +139,7 @@ const upcomingEvents = [
           </div>
         </section>
 
-        <!-- БЛОК 3: ПОДІЇ (1 колонка) -->
+        <!-- БЛОК 3: ПОДІЇ -->
         <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
           <div>
             <div class="flex items-center space-x-2 mb-4">
@@ -163,7 +157,7 @@ const upcomingEvents = [
           </div>
         </section>
 
-        <!-- БЛОК 4: ШВИДКА НОТАТКА (2 колонки) -->
+        <!-- БЛОК 4: ШВИДКА НОТАТКА -->
         <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
           <div>
             <div class="flex items-center space-x-2 mb-3">
@@ -190,9 +184,7 @@ const upcomingEvents = [
       </div>
     </main>
 
-    <!-- Клієнтський скрипт для інтерактиву -->
     <script>
-      // 1. Фільтрація сімейних завдань
       const filterButtons = document.querySelectorAll('.filter-btn');
       const taskItems = document.querySelectorAll('.task-item');
 
@@ -217,7 +209,6 @@ const upcomingEvents = [
         });
       });
 
-      // 2. Логіка збереження швидкої нотатки
       const saveBtn = document.getElementById('save-note');
       const noteInput = document.getElementById('note-input') as HTMLInputElement;
 
