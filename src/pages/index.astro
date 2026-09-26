@@ -1,5 +1,5 @@
 ---
-// Локація: Кути, Косівський район (координати приблизно 48.25° с. ш., 25.15° сх. д.)
+// Локація: Кути (Косівський район)
 let weather = { location: "Кути (Косівський р-н)", temp: "—", condition: "Завантаження...", wind: "—" };
 let dailyForecast = [
   { day: "Сьогодні", icon: "⛅", max: "18°", min: "9°", cond: "Мінлива хмарність", wind: "2.4 м/с" },
@@ -29,12 +29,14 @@ try {
 const familyTasks = [
   { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
   { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
-  { id: 3, assignee: "Всі", task: "Перевірити стан інструментів", status: "план" }
+  { id: 3, assignee: "Всі", task: "Перевірити стан інструментів", status: "план" },
+  { id: 4, assignee: "Антоніна", task: "Прибрати робочий стіл", status: "план" }
 ];
 
 const upcomingEvents = [
   { date: "Сьогодні, 18:00", title: "Розмова з волонтером (ENGin)" },
-  { date: "Завтра", title: "Планування тижня" }
+  { date: "Завтра", title: "Планування тижня" },
+  { date: "Середа, 10:00", title: "Зустріч по закупівлях" }
 ];
 ---
 
@@ -53,15 +55,21 @@ const upcomingEvents = [
       }
       .hub-container {
         width: 100%;
-        max-width: 1600px;
+        max-width: 1750px;
         margin: 0 auto;
       }
+      /* 4 рівні вертикальні колонки на великих екранах */
       .hub-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
       }
-      @media (max-width: 1100px) {
+      @media (max-width: 1400px) {
+        .hub-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 768px) {
         .hub-grid {
           grid-template-columns: 1fr;
         }
@@ -70,51 +78,70 @@ const upcomingEvents = [
         background-color: #1f2937;
         border: 1px solid #374151;
         border-radius: 16px;
-        padding: 24px;
+        padding: 20px;
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        height: 280px; /* Фіксована однакова висота для всіх вікон */
+        height: 520px; /* Фіксована висота для всіх 4 колонок */
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
       }
-      .card-content {
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #374151;
+        flex-shrink: 0;
+      }
+      .card-body {
         overflow-y: auto;
         flex-grow: 1;
+        padding-right: 4px;
+      }
+      /* Стилізація смуги прокрутки всередині блоків */
+      .card-body::-webkit-scrollbar {
+        width: 6px;
+      }
+      .card-body::-webkit-scrollbar-track {
+        background: rgba(17, 24, 39, 0.3);
+        border-radius: 4px;
+      }
+      .card-body::-webkit-scrollbar-thumb {
+        background: #4b5563;
+        border-radius: 4px;
       }
       .weather-mini-grid {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        margin-top: 14px;
-        padding-top: 12px;
-        border-top: 1px solid #374151;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 8px;
+        margin-top: 12px;
       }
       .weather-day {
         background: rgba(17, 24, 39, 0.5);
-        text-align: center;
-        padding: 8px 2px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
         border-radius: 10px;
-        font-size: 11px;
+        font-size: 13px;
         cursor: pointer;
         border: 1px solid transparent;
         transition: all 0.2s;
       }
       .weather-day:hover {
         border-color: #3b82f6;
+        background: rgba(37, 99, 235, 0.1);
       }
       .task-row {
         background: rgba(17, 24, 39, 0.5);
         border: 1px solid rgba(55, 65, 81, 0.4);
-        padding: 12px 16px;
+        padding: 12px 14px;
         border-radius: 12px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
-      }
-      .tasks-container {
-        min-height: 140px; /* Фіксована висота списку завдань, щоб вікно не стрибало при фільтрації */
       }
       .badge {
         font-size: 10px;
@@ -146,111 +173,111 @@ const upcomingEvents = [
       <!-- Шапка -->
       <header style="margin-bottom: 24px; padding-left: 4px;">
         <h1 style="font-size: 28px; font-weight: 800; margin: 0; color: #ffffff;">Мій Хаб</h1>
-        <p style="color: #9ca3af; font-size: 14px; margin: 4px 0 0 0;">Оперативний центр</p>
+        <p style="color: #9ca3af; font-size: 14px; margin: 4px 0 0 0;">Оперативний центр • {weather.location}</p>
       </header>
 
-      <!-- Сітка дашборду 2х2 (усі вікна однакового розміру) -->
+      <!-- 4 рівні вертикальні колонки -->
       <div class="hub-grid">
         
-        <!-- БЛОК 1: ПОГОДА -->
+        <!-- КОЛОНКА 1: ПОГОДА -->
         <section class="card">
-          <div class="card-content">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">⛅</span>
-                <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Погода • {weather.location}</h2>
-              </div>
-              <span id="weather-detail-title" style="font-size: 11px; color: #38bdf8; font-weight: 600;">Сьогодні</span>
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">⛅</span>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Погода</h2>
             </div>
-            
-            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px;">
+            <span id="weather-detail-title" style="font-size: 11px; color: #38bdf8; font-weight: 600;">Сьогодні</span>
+          </div>
+
+          <div class="card-body">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; background: rgba(17, 24, 39, 0.4); padding: 12px; border-radius: 12px;">
               <div>
-                <div id="weather-cond" style="font-size: 16px; font-weight: bold; color: white;">{weather.condition} ⛅</div>
-                <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">Вітер: <span id="weather-wind">{weather.wind}</span></div>
+                <div id="weather-cond" style="font-size: 14px; font-weight: bold; color: white;">{weather.condition} ⛅</div>
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 2px;">Вітер: <span id="weather-wind">{weather.wind}</span></div>
               </div>
-              <div id="weather-temp" style="font-size: 32px; font-weight: 900; color: white;">{weather.temp}</div>
+              <div id="weather-temp" style="font-size: 28px; font-weight: 900; color: white;">{weather.temp}</div>
             </div>
 
-            <!-- Міні-прогноз (клікабельний) -->
+            <!-- Список днів для детального перегляду -->
             <div class="weather-mini-grid">
               {dailyForecast.map((item, index) => (
                 <div class="weather-day" onclick={`showWeatherDetail(${index})`}>
-                  <div style="color: #9ca3af; margin-bottom: 2px;">{item.day}</div>
-                  <div style="font-size: 14px;">{item.icon}</div>
-                  <div style="font-weight: 600; margin-top: 2px; font-size: 11px;">{item.max}</div>
+                  <span style="font-weight: 600; color: #d1d5db;">{item.day} {item.icon}</span>
+                  <span style="font-weight: 600; font-size: 12px; color: #60a5fa;">{item.max} / <span style="color: #9ca3af;">{item.min}</span></span>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ -->
+        <!-- КОЛОНКА 2: СІМЕЙНІ ЗАДАЧІ -->
         <section class="card">
-          <div class="card-content" style="overflow: visible;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 18px;">👥</span>
-                <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Сімейні задачі</h2>
-              </div>
-              
-              <!-- Фільтри -->
-              <div style="display: flex; gap: 3px; background: rgba(17, 24, 39, 0.6); padding: 3px; border-radius: 10px; font-size: 11px;" id="filter-container">
-                <button class="filter-btn" data-filter="all" style="background: #2563eb; color: white; border: none; padding: 4px 10px; border-radius: 8px; cursor: pointer;">Усі</button>
-                <button class="filter-btn" data-filter="в процесі" style="background: transparent; color: #9ca3af; border: none; padding: 4px 10px; border-radius: 8px; cursor: pointer;">В процесі</button>
-                <button class="filter-btn" data-filter="план" style="background: transparent; color: #9ca3af; border: none; padding: 4px 10px; border-radius: 8px; cursor: pointer;">План</button>
-                <button class="filter-btn" data-filter="виконано" style="background: transparent; color: #9ca3af; border: none; padding: 4px 10px; border-radius: 8px; cursor: pointer;">Виконано</button>
-              </div>
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">👥</span>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Задачі</h2>
             </div>
+            
+            <!-- Міні-фільтри -->
+            <div style="display: flex; gap: 2px; background: rgba(17, 24, 39, 0.6); padding: 2px; border-radius: 8px; font-size: 10px;" id="filter-container">
+              <button class="filter-btn" data-filter="all" style="background: #2563eb; color: white; border: none; padding: 3px 6px; border-radius: 6px; cursor: pointer;">Усі</button>
+              <button class="filter-btn" data-filter="в процесі" style="background: transparent; color: #9ca3af; border: none; padding: 3px 6px; border-radius: 6px; cursor: pointer;">Процес</button>
+              <button class="filter-btn" data-filter="виконано" style="background: transparent; color: #9ca3af; border: none; padding: 3px 6px; border-radius: 6px; cursor: pointer;">Готово</button>
+            </div>
+          </div>
 
-            <!-- Список завдань з фіксованою мінімальною висотою -->
-            <div class="tasks-container" id="tasks-list">
-              {familyTasks.map(item => (
-                <div class="task-row" data-status={item.status}>
-                  <div>
-                    <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d;">{item.assignee}</span>
-                    <div style="font-size: 13px; font-weight: 500; color: white;">{item.task}</div>
-                  </div>
-                  <span style="font-size: 11px; padding: 3px 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px; font-weight: 500;">{item.status}</span>
+          <div class="card-body" id="tasks-list">
+            {familyTasks.map(item => (
+              <div class="task-row" data-status={item.status}>
+                <div>
+                  <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d;">{item.assignee}</span>
+                  <div style="font-size: 12px; font-weight: 500; color: white; line-height: 1.3;">{item.task}</div>
                 </div>
-              ))}
-            </div>
+                <span style="font-size: 10px; padding: 2px 6px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 6px; font-weight: 500; white-space: nowrap; margin-left: 8px;">{item.status}</span>
+              </div>
+            ))}
           </div>
         </section>
 
-        <!-- БЛОК 3: ПОДІЇ -->
+        <!-- КОЛОНКА 3: ПОДІЇ -->
         <section class="card">
-          <div class="card-content">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 18px;">📅</span>
-              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Найближчі події</h2>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Події</h2>
             </div>
+          </div>
+
+          <div class="card-body">
             <div style="display: flex; flex-direction: column; gap: 10px;">
               {upcomingEvents.map(event => (
-                <div style="background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(55, 65, 81, 0.4); padding: 10px 14px; border-radius: 12px;">
+                <div style="background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(55, 65, 81, 0.4); padding: 12px; border-radius: 12px;">
                   <div style="font-size: 11px; color: #38bdf8; font-weight: 600; margin-bottom: 2px;">{event.date}</div>
-                  <div style="font-size: 13px; font-weight: 500; color: white;">{event.title}</div>
+                  <div style="font-size: 12px; font-weight: 500; color: white; line-height: 1.3;">{event.title}</div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <!-- БЛОК 4: ШВИДКА НОТАТКА -->
+        <!-- КОЛОНКА 4: ШВИДКА НОТАТКА -->
         <section class="card">
-          <div class="card-content">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
               <span style="font-size: 18px;">💡</span>
-              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Швидка нотатка / Думка</h2>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Нотатки</h2>
             </div>
+          </div>
+
+          <div class="card-body" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div style="display: flex; flex-direction: column; gap: 10px;">
-              <input 
-                type="text" 
+              <textarea 
                 id="note-input" 
-                placeholder="Введіть думку, посилання чи ідею..." 
-                style="width: 100%; box-sizing: border-box; background: rgba(17, 24, 39, 0.7); border: 1px solid #374151; border-radius: 12px; padding: 10px 14px; font-size: 13px; color: white; outline: none;"
-              />
+                placeholder="Введіть думку чи ідею..." 
+                style="width: 100%; height: 120px; box-sizing: border-box; background: rgba(17, 24, 39, 0.7); border: 1px solid #374151; border-radius: 12px; padding: 12px; font-size: 12px; color: white; outline: none; resize: none;"
+              ></textarea>
               <button id="save-note" class="btn">
-                Зберегти нотатку
+                Зберегти у хмару
               </button>
             </div>
           </div>
@@ -260,7 +287,7 @@ const upcomingEvents = [
     </div>
 
     <script define:vars={{ dailyForecast }}>
-      // 1. Інтерактив погоди при натисканні на день
+      // 1. Інтерактив погоди
       window.showWeatherDetail = function(index) {
         const dayData = dailyForecast[index];
         document.getElementById('weather-detail-title').innerText = dayData.day;
@@ -269,7 +296,7 @@ const upcomingEvents = [
         document.getElementById('weather-temp').innerText = `${dayData.max} / ${dayData.min}`;
       };
 
-      // 2. Фільтрація сімейних завдань без зміни розміру блоку
+      // 2. Фільтрація завдань
       const filterButtons = document.querySelectorAll('.filter-btn');
       const taskItems = document.querySelectorAll('.task-row');
 
