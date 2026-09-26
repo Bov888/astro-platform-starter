@@ -1,22 +1,33 @@
 ---
+// 1. Динамічне завантаження погоди (наприклад, для Карпатського регіону / Косівщини)
+let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—" };
+try {
+  // Координати приблизно для Косівського району
+  const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m");
+  const weatherData = await weatherRes.json();
+  if (weatherData && weatherData.current) {
+    weather = {
+      location: "Карпати",
+      temp: `${Math.round(weatherData.current.temperature_2m)}°C`,
+      condition: weatherData.current.temperature_2m > 0 ? "Ясно / Хмарно" : "Прохолодно",
+      wind: `${weatherData.current.wind_speed_10m} м/с`
+    };
+  }
+} catch (e) {
+  console.error("Помилка погоди:", e);
+}
+
+// 2. Статичні поки що задачі (сюди можна підставити ваш Google Apps Script для завдань)
 const familyTasks = [
-  { assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
-  { assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
-  { assignee: "Всі", task: "Перевірити стан інструментів", status: "план" }
+  { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
+  { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
+  { id: 3, assignee: "Всі", task: "Перевірити стан інструментів", status: "план" }
 ];
 
 const upcomingEvents = [
   { date: "Сьогодні, 18:00", title: "Розмова з волонтером (ENGin)" },
   { date: "Завтра", title: "Планування тижня" }
 ];
-
-// Простий приклад даних погоди (у майбутньому можна підтягувати через API)
-const weather = {
-  location: "Карпати",
-  temp: "+18°C",
-  condition: "Мінлива хмарність",
-  wind: "3 м/с"
-};
 ---
 
 <html lang="uk">
@@ -87,7 +98,6 @@ const weather = {
       .badge-green { background: #064e3b; color: #a7f3d0; }
       .badge-blue { background: #1e3a8a; color: #bfdbfe; }
       
-      /* Погода */
       .weather-box {
         display: flex;
         justify-content: space-between;
@@ -126,7 +136,7 @@ const weather = {
         <p style="color: #94a3b8; font-size: 14px; margin: 0;">Оперативний центр</p>
       </div>
 
-      <!-- Блок погоди -->
+      <!-- Погода в реальному часі -->
       <div class="card weather-box">
         <div>
           <div style="font-size: 12px; color: #94a3b8; text-transform: uppercase;">Погода • {weather.location}</div>
@@ -135,30 +145,31 @@ const weather = {
         <div class="temp">{weather.temp}</div>
       </div>
 
-      <!-- Блок 1: Задачі для сім'ї з фільтрами -->
+      <!-- Сімейні задачі з інтерактивними фільтрами -->
       <div class="card">
         <h2>👥 Сімейні задачі</h2>
         
-        <!-- Панель фільтрів -->
-        <div class="filters">
-          <button class="filter-btn active">Усі</button>
-          <button class="filter-btn">В процесі</button>
-          <button class="filter-btn">План</button>
-          <button class="filter-btn">Виконано</button>
+        <div class="filters" id="filter-container">
+          <button class="filter-btn active" data-filter="all">Усі</button>
+          <button class="filter-btn" data-filter="в процесі">В процесі</button>
+          <button class="filter-btn" data-filter="план">План</button>
+          <button class="filter-btn" data-filter="виконано">Виконано</button>
         </div>
 
-        {familyTasks.map(item => (
-          <div class="task-item">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span class="badge badge-orange">{item.assignee}</span>
-              <span class="badge badge-blue">{item.status}</span>
+        <div id="tasks-list">
+          {familyTasks.map(item => (
+            <div class="task-item" data-status={item.status}>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span class="badge badge-orange">{item.assignee}</span>
+                <span class="badge badge-blue">{item.status}</span>
+              </div>
+              <div style="font-size: 14px; font-weight: 500;">{item.task}</div>
             </div>
-            <div style="font-size: 14px; font-weight: 500;">{item.task}</div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      <!-- Блок 2: Події -->
+      <!-- Події -->
       <div class="card">
         <h2>📅 Події</h2>
         {upcomingEvents.map(event => (
@@ -169,13 +180,47 @@ const weather = {
         ))}
       </div>
 
-      <!-- Блок 3: Швидка нотатка -->
+      <!-- Швидка нотатка -->
       <div class="card">
         <h2>💡 Швидка нотатка</h2>
-        <input type="text" placeholder="Введіть думку або посилання..." />
-        <button class="save-btn">Зберегти</button>
+        <input type="text" id="note-input" placeholder="Введіть думку або посилання..." />
+        <button class="save-btn" id="save-note">Зберегти</button>
       </div>
 
     </div>
+
+    <!-- Клієнтський скрипт для роботи фільтрів та нотаток прямо в браузері -->
+    <script>
+      // Фільтрація завдань
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const taskItems = document.querySelectorAll('.task-item');
+
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          const filter = btn.getAttribute('data-filter');
+          taskItems.forEach(item => {
+            const status = item.getAttribute('data-status');
+            if (filter === 'all' || status === filter) {
+              item.style.display = 'block';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      // Збереження нотатки в локальне сховище браузера (або можна підключити хмару)
+      const saveBtn = document.getElementById('save-note');
+      const noteInput = document.getElementById('note-input') as HTMLInputElement;
+
+      saveBtn?.addEventListener('click', () => {
+        if (!noteInput || !noteInput.value.trim()) return;
+        alert('Нотатку збережено: ' + noteInput.value);
+        noteInput.value = '';
+      });
+    </script>
   </body>
 </html>
