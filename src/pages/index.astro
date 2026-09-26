@@ -1,47 +1,22 @@
 ---
-// Детальний запит погоди з прогнозом на 7 днів (для координат Карпатського регіону / Косівщини)
-let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—", daily: [] };
+// 1. Динамічне завантаження погоди для Карпатського регіону
+let weather = { location: "Карпати", temp: "—", condition: "Завантаження...", wind: "—" };
 try {
-  const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto");
-  const data = await weatherRes.json();
-  
-  if (data && data.current) {
-    // Проста інтерпретація кодів погоди WMO
-    const getWeatherDesc = (code) => {
-      if (code === 0) return "Ясно ☀️";
-      if (code <= 3) return "Мінлива хмарність ⛅";
-      if (code <= 48) return "Туман 🌫️";
-      if (code <= 67) return "Дощ 🌧️";
-      if (code <= 77) return "Сніг ❄️";
-      return "Змінна погода 🌦️";
-    };
-
-    const dailyForecast = [];
-    if (data.daily && data.daily.time) {
-      const daysOfWeek = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-      for (let i = 0; i < data.daily.time.length; i++) {
-        const dateObj = new Date(data.daily.time[i]);
-        dailyForecast.push({
-          day: i === 0 ? 'Сьогодні' : daysOfWeek[dateObj.getDay()],
-          max: Math.round(data.daily.temperature_2m_max[i]),
-          min: Math.round(data.daily.temperature_2m_min[i]),
-          desc: getWeatherDesc(data.daily.weather_code[i])
-        });
-      }
-    }
-
+  const weatherRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=48.31&longitude=25.09&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m");
+  const weatherData = await weatherRes.json();
+  if (weatherData && weatherData.current) {
     weather = {
       location: "Карпати",
-      temp: `${Math.round(data.current.temperature_2m)}°C`,
-      condition: getWeatherDesc(data.current.weather_code),
-      wind: `${data.current.wind_speed_10m} м/с`,
-      daily: dailyForecast
+      temp: `${Math.round(weatherData.current.temperature_2m)}°C`,
+      condition: weatherData.current.temperature_2m > 0 ? "Мінлива хмарність" : "Прохолодно",
+      wind: `${weatherData.current.wind_speed_10m} м/с`
     };
   }
 } catch (e) {
-  console.error("Помилка завантаження погоди:", e);
+  console.error("Помилка погоди:", e);
 }
 
+// 2. Початкові сімейні задачі
 const familyTasks = [
   { id: 1, assignee: "Антоніна", task: "Підготувати малюнки до школи", status: "в процесі" },
   { id: 2, assignee: "Дружина", task: "Узгодити зустріч по клієнтах", status: "виконано" },
@@ -58,232 +33,197 @@ const upcomingEvents = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Мій Хаб</title>
+    <title>Мій Хаб • Оперативний центр</title>
     <style>
-      body {
-        font-family: system-ui, -apple-system, sans-serif;
-        background-color: #0f172a;
-        color: #f1f5f9;
-        margin: 0;
-        padding: 16px;
-      }
-      .container {
-        max-width: 600px;
-        margin: 0 auto;
-      }
-      .card {
-        background-color: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
-      }
-      h1 { font-size: 24px; margin: 0 0 4px 0; color: #fff; }
-      h2 { font-size: 16px; margin: 0 0 12px 0; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
-      
-      /* Фільтри */
-      .filters {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 12px;
-        overflow-x: auto;
-        padding-bottom: 4px;
-      }
-      .filter-btn {
-        background: #0f172a;
-        border: 1px solid #334155;
-        color: #94a3b8;
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 12px;
-        cursor: pointer;
-        white-space: nowrap;
-      }
-      .filter-btn.active {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb;
-      }
-
-      .task-item, .event-item {
-        background: #0f172a;
-        padding: 10px 12px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        border: 1px solid #1e293b;
-      }
-      .badge {
-        font-size: 11px;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: bold;
-      }
-      .badge-orange { background: #78350f; color: #fde68a; }
-      .badge-green { background: #064e3b; color: #a7f3d0; }
-      .badge-blue { background: #1e3a8a; color: #bfdbfe; }
-      
-      /* Погода */
-      .weather-current {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #334155;
-      }
-      .temp { font-size: 32px; font-weight: bold; color: #38bdf8; }
-      
-      .forecast-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        text-align: center;
-      }
-      .forecast-day {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 8px 4px;
-      }
-      .forecast-day-name { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
-      .forecast-temps { font-size: 12px; font-weight: bold; margin-top: 4px; }
-      .temp-max { color: #f87171; }
-      .temp-min { color: #60a5fa; }
-
-      input[type="text"] {
-        width: 100%;
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 10px;
-        color: #fff;
-        box-sizing: border-box;
-        margin-bottom: 8px;
-      }
-      button.save-btn {
-        background: #2563eb;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 16px;
-        font-weight: bold;
-        width: 100%;
-        cursor: pointer;
+      /* Додаткові дрібні стилі для плавних переходів фільтрів */
+      .task-item {
+        transition: all 0.2s ease-in-out;
       }
     </style>
   </head>
-  <body>
-    <div class="container">
+  <body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-6 font-sans antialiased">
+    
+    <!-- Головний контейнер на всю ширину екрана з обмеженням 1600px -->
+    <main class="max-w-[1600px] mx-auto">
       
       <!-- Шапка -->
-      <div style="margin-bottom: 20px;">
-        <h1>Мій Хаб</h1>
-        <p style="color: #94a3b8; font-size: 14px; margin: 0;">Оперативний центр</p>
-      </div>
+      <header class="mb-6 px-2">
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Мій Хаб</h1>
+        <p class="text-gray-400 text-sm">Оперативний центр</p>
+      </header>
 
-      <!-- Погода: поточна + прогноз на 7 днів -->
-      <div class="card">
-        <h2>🌤️ Погода • {weather.location}</h2>
+      <!-- Сітка дашборду на всю ширину (3 колонки на ноутбуках) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
-        <div class="weather-current">
+        <!-- БЛОК 1: ПОГОДА (1 колонка) -->
+        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
           <div>
-            <div style="font-size: 16px; font-weight: 600; color: #fff;">{weather.condition}</div>
-            <div style="font-size: 13px; color: #94a3b8; margin-top: 2px;">Вітер: {weather.wind}</div>
-          </div>
-          <div class="temp">{weather.temp}</div>
-        </div>
-
-        <!-- 7 днів прогнозу -->
-        <div class="forecast-grid">
-          {weather.daily.map(day => (
-            <div class="forecast-day">
-              <div class="forecast-day-name">{day.day}</div>
-              <div style="font-size: 14px;" title={day.desc}>
-                {day.desc.includes('☀️') ? '☀️' : day.desc.includes('⛅') ? '⛅' : day.desc.includes('🌧️') ? '🌧️' : '🌥️'}
+            <div class="flex items-center space-x-2 mb-3">
+              <span class="text-xl">⛅</span>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Погода • {weather.location}</h2>
+            </div>
+            
+            <div class="flex items-baseline justify-between mb-4">
+              <div>
+                <div class="text-xl font-bold text-white">{weather.condition} ⛅</div>
+                <div class="text-xs text-gray-400 mt-0.5">Вітер: {weather.wind}</div>
               </div>
-              <div class="forecast-temps">
-                <span class="temp-max">{day.max}°</span>
-                <span style="color: #64748b; font-weight: normal;">/</span>
-                <span class="temp-min">{day.min}°</span>
+              <div class="text-4xl font-black text-white">{weather.temp}</div>
+            </div>
+
+            <!-- Міні-прогноз на тиждень -->
+            <div class="grid grid-cols-7 gap-1.5 pt-3 border-t border-gray-700/60">
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Сьогодні</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/9°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Нд</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/7°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Пн</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/9°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Вт</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">16°<span class="text-gray-500 font-normal">/10°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Ср</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">17°<span class="text-gray-500 font-normal">/9°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Чт</div>
+                <div class="text-sm">⛅</div>
+                <div class="text-xs font-semibold mt-1">16°<span class="text-gray-500 font-normal">/6°</span></div>
+              </div>
+              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
+                <div class="text-[10px] text-gray-400 mb-1">Пт</div>
+                <div class="text-sm">🌧️</div>
+                <div class="text-xs font-semibold mt-1">12°<span class="text-gray-500 font-normal">/9°</span></div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <!-- Сімейні задачі з фільтрами -->
-      <div class="card">
-        <h2>👥 Сімейні задачі</h2>
-        
-        <div class="filters">
-          <button class="filter-btn active" data-filter="all">Усі</button>
-          <button class="filter-btn" data-filter="в процесі">В процесі</button>
-          <button class="filter-btn" data-filter="план">План</button>
-          <button class="filter-btn" data-filter="виконано">Виконано</button>
-        </div>
-
-        <div id="tasks-list">
-          {familyTasks.map(item => (
-            <div class="task-item" data-status={item.status}>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span class="badge badge-orange">{item.assignee}</span>
-                <span class="badge badge-blue">{item.status}</span>
-              </div>
-              <div style="font-size: 14px; font-weight: 500;">{item.task}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <!-- Події -->
-      <div class="card">
-        <h2>📅 Події</h2>
-        {upcomingEvents.map(event => (
-          <div class="event-item">
-            <div style="font-size: 12px; color: #38bdf8; margin-bottom: 2px;">{event.date}</div>
-            <div style="font-size: 14px; font-weight: 500;">{event.title}</div>
           </div>
-        ))}
+        </section>
+
+        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ (2 колонки) -->
+        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-xl">👥</span>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Сімейні задачі</h2>
+              </div>
+              
+              <!-- Фільтри -->
+              <div class="flex space-x-1 bg-gray-900/60 p-1 rounded-xl text-xs" id="filter-container">
+                <button class="filter-btn px-3 py-1 bg-blue-600 text-white rounded-lg font-medium shadow cursor-pointer" data-filter="all">Усі</button>
+                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="в процесі">В процесі</button>
+                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="план">План</button>
+                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="виконано">Виконано</button>
+              </div>
+            </div>
+
+            <!-- Список завдань -->
+            <div class="space-y-3" id="tasks-list">
+              {familyTasks.map(item => (
+                <div class="task-item bg-gray-900/50 p-4 rounded-xl border border-gray-700/40 flex items-center justify-between" data-status={item.status}>
+                  <div>
+                    <span class="inline-block px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded mb-1">{item.assignee}</span>
+                    <div class="text-sm font-medium text-white">{item.task}</div>
+                  </div>
+                  <span class="text-xs px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-lg font-medium">{item.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <!-- БЛОК 3: ПОДІЇ (1 колонка) -->
+        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 mb-4">
+              <span class="text-xl">📅</span>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Найближчі події</h2>
+            </div>
+            <div class="space-y-3">
+              {upcomingEvents.map(event => (
+                <div class="bg-gray-900/50 p-3.5 rounded-xl border border-gray-700/40">
+                  <div class="text-[11px] text-sky-400 font-semibold mb-1">{event.date}</div>
+                  <div class="text-sm font-medium text-white">{event.title}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <!-- БЛОК 4: ШВИДКА НОТАТКА (2 колонки) -->
+        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 mb-3">
+              <span class="text-xl">💡</span>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Швидка нотатка / Думка</h2>
+            </div>
+            <div class="space-y-3">
+              <input 
+                type="text" 
+                id="note-input" 
+                placeholder="Введіть думку, посилання чи ідею..." 
+                class="w-full bg-gray-900/70 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+              />
+              <button 
+                id="save-note" 
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition shadow-md cursor-pointer"
+              >
+                Зберегти нотатку
+              </button>
+            </div>
+          </div>
+        </section>
+
       </div>
+    </main>
 
-      <!-- Швидка нотатка -->
-      <div class="card">
-        <h2>💡 Швидка нотатка</h2>
-        <input type="text" id="note-input" placeholder="Введіть думку або посилання..." />
-        <button class="save-btn" id="save-note">Зберегти</button>
-      </div>
-
-    </div>
-
+    <!-- Клієнтський скрипт для інтерактиву -->
     <script>
-      // Фільтрація завдань
+      // 1. Фільтрація сімейних завдань
       const filterButtons = document.querySelectorAll('.filter-btn');
       const taskItems = document.querySelectorAll('.task-item');
 
       filterButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-          filterButtons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
+          filterButtons.forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white', 'shadow');
+            b.classList.add('text-gray-400');
+          });
+          btn.classList.add('bg-blue-600', 'text-white', 'shadow');
+          btn.classList.remove('text-gray-400');
           
           const filter = btn.getAttribute('data-filter');
           taskItems.forEach(item => {
             const status = item.getAttribute('data-status');
             if (filter === 'all' || status === filter) {
-              item.style.display = 'block';
+              (item as HTMLElement).style.display = 'flex';
             } else {
-              item.style.display = 'none';
+              (item as HTMLElement).style.display = 'none';
             }
           });
         });
       });
 
-      // Збереження нотатки
+      // 2. Логіка збереження швидкої нотатки
       const saveBtn = document.getElementById('save-note');
       const noteInput = document.getElementById('note-input') as HTMLInputElement;
 
       saveBtn?.addEventListener('click', () => {
         if (!noteInput || !noteInput.value.trim()) return;
-        alert('Нотатку збережено: ' + noteInput.value);
+        alert('Нотатку успішно збережено: ' + noteInput.value);
         noteInput.value = '';
       });
     </script>
