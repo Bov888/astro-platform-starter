@@ -33,106 +33,161 @@ const upcomingEvents = [
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Мій Хаб • Оперативний центр</title>
-    <!-- Підключаємо Tailwind CSS через CDN, щоб стилі гарантовано спрацювали -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Гарантовані стилі сітки на всю ширину, що не залежать від збірки Tailwind */
+      body {
+        background-color: #111827;
+        color: #e5e7eb;
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 20px;
+      }
+      .hub-container {
+        width: 100%;
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+      .hub-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      @media (max-width: 1024px) {
+        .hub-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background-color: #1f2937;
+        border: 1px solid #374151;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      }
+      .col-span-2 {
+        grid-column: span 2;
+      }
+      @media (max-width: 1024px) {
+        .col-span-2 {
+          grid-column: span 1;
+        }
+      }
+      .weather-mini-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #374151;
+      }
+      .weather-day {
+        background: rgba(17, 24, 39, 0.4);
+        text-align: center;
+        padding: 6px 2px;
+        border-radius: 10px;
+        font-size: 11px;
+      }
+      .task-row {
+        background: rgba(17, 24, 39, 0.5);
+        border: 1px solid rgba(55, 65, 81, 0.4);
+        padding: 14px;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .badge {
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-bottom: 4px;
+      }
+      .btn {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .btn:hover {
+        background: #1d4ed8;
+      }
+    </style>
   </head>
-  <body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-6 font-sans antialiased">
+  <body>
     
-    <main class="max-w-[1600px] mx-auto">
+    <div class="hub-container">
       
       <!-- Шапка -->
-      <header class="mb-6 px-2">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Мій Хаб</h1>
-        <p class="text-gray-400 text-sm">Оперативний центр</p>
+      <header style="margin-bottom: 24px; padding-left: 8px;">
+        <h1 style="font-size: 28px; font-weight: 800; margin: 0; color: #ffffff;">Мій Хаб</h1>
+        <p style="color: #9ca3af; font-size: 14px; margin: 4px 0 0 0;">Оперативний центр</p>
       </header>
 
-      <!-- Сітка дашборду на всю ширину (3 колонки на ноутбуках) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Сітка дашборду на всю ширину -->
+      <div class="hub-grid">
         
         <!-- БЛОК 1: ПОГОДА -->
-        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
+        <section class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
           <div>
-            <div class="flex items-center space-x-2 mb-3">
-              <span class="text-xl">⛅</span>
-              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Погода • {weather.location}</h2>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="font-size: 20px;">⛅</span>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Погода • {weather.location}</h2>
             </div>
             
-            <div class="flex items-baseline justify-between mb-4">
+            <div style="display: flex; align-items: baseline; justify-content: between; margin-bottom: 16px;">
               <div>
-                <div class="text-xl font-bold text-white">{weather.condition} ⛅</div>
-                <div class="text-xs text-gray-400 mt-0.5">Вітер: {weather.wind}</div>
+                <div style="font-size: 18px; font-weight: bold; color: white;">{weather.condition} ⛅</div>
+                <div style="font-size: 12px; color: #9ca3af; margin-top: 2px;">Вітер: {weather.wind}</div>
               </div>
-              <div class="text-4xl font-black text-white">{weather.temp}</div>
+              <div style="font-size: 36px; font-weight: 900; color: white; margin-left: auto;">{weather.temp}</div>
             </div>
 
             <!-- Міні-прогноз на тиждень -->
-            <div class="grid grid-cols-7 gap-1.5 pt-3 border-t border-gray-700/60">
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Сьогодні</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/9°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Нд</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/7°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Пн</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">18°<span class="text-gray-500 font-normal">/9°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Вт</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">16°<span class="text-gray-500 font-normal">/10°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Ср</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">17°<span class="text-gray-500 font-normal">/9°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Чт</div>
-                <div class="text-sm">⛅</div>
-                <div class="text-xs font-semibold mt-1">16°<span class="text-gray-500 font-normal">/6°</span></div>
-              </div>
-              <div class="text-center bg-gray-900/40 p-1.5 rounded-xl">
-                <div class="text-[10px] text-gray-400 mb-1">Пт</div>
-                <div class="text-sm">🌧️</div>
-                <div class="text-xs font-semibold mt-1">12°<span class="text-gray-500 font-normal">/9°</span></div>
-              </div>
+            <div class="weather-mini-grid">
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Сьогодні</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">18°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Нд</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">18°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Пн</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">18°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Вт</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">16°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Ср</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">17°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Чт</div><div>⛅</div><div style="font-weight: 600; margin-top: 2px;">16°</div></div>
+              <div class="weather-day"><div style="color: #9ca3af; margin-bottom: 2px;">Пт</div><div>🌧️</div><div style="font-weight: 600; margin-top: 2px;">12°</div></div>
             </div>
           </div>
         </section>
 
-        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ -->
-        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
+        <!-- БЛОК 2: СІМЕЙНІ ЗАДАЧІ (на 2 колонки) -->
+        <section class="card col-span-2" style="display: flex; flex-direction: column; justify-content: space-between;">
           <div>
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center space-x-2">
-                <span class="text-xl">👥</span>
-                <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Сімейні задачі</h2>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 20px;">👥</span>
+                <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Сімейні задачі</h2>
               </div>
               
               <!-- Фільтри -->
-              <div class="flex space-x-1 bg-gray-900/60 p-1 rounded-xl text-xs" id="filter-container">
-                <button class="filter-btn px-3 py-1 bg-blue-600 text-white rounded-lg font-medium shadow cursor-pointer" data-filter="all">Усі</button>
-                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="в процесі">В процесі</button>
-                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="план">План</button>
-                <button class="filter-btn px-3 py-1 text-gray-400 hover:text-white transition cursor-pointer" data-filter="виконано">Виконано</button>
+              <div style="display: flex; gap: 4px; background: rgba(17, 24, 39, 0.6); padding: 4px; border-radius: 10px; font-size: 12px;" id="filter-container">
+                <button class="filter-btn" data-filter="all" style="background: #2563eb; color: white; border: none; padding: 4px 12px; border-radius: 8px; cursor: pointer;">Усі</button>
+                <button class="filter-btn" data-filter="в процесі" style="background: transparent; color: #9ca3af; border: none; padding: 4px 12px; border-radius: 8px; cursor: pointer;">В процесі</button>
+                <button class="filter-btn" data-filter="план" style="background: transparent; color: #9ca3af; border: none; padding: 4px 12px; border-radius: 8px; cursor: pointer;">План</button>
+                <button class="filter-btn" data-filter="виконано" style="background: transparent; color: #9ca3af; border: none; padding: 4px 12px; border-radius: 8px; cursor: pointer;">Виконано</button>
               </div>
             </div>
 
             <!-- Список завдань -->
-            <div class="space-y-3" id="tasks-list">
+            <div id="tasks-list">
               {familyTasks.map(item => (
-                <div class="task-item bg-gray-900/50 p-4 rounded-xl border border-gray-700/40 flex items-center justify-between" data-status={item.status}>
+                <div class="task-row" data-status={item.status}>
                   <div>
-                    <span class="inline-block px-2 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded mb-1">{item.assignee}</span>
-                    <div class="text-sm font-medium text-white">{item.task}</div>
+                    <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d;">{item.assignee}</span>
+                    <div style="font-size: 14px; font-weight: 500; color: white;">{item.task}</div>
                   </div>
-                  <span class="text-xs px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-lg font-medium">{item.status}</span>
+                  <span style="font-size: 12px; padding: 4px 10px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-radius: 8px; font-weight: 500;">{item.status}</span>
                 </div>
               ))}
             </div>
@@ -140,41 +195,38 @@ const upcomingEvents = [
         </section>
 
         <!-- БЛОК 3: ПОДІЇ -->
-        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg flex flex-col justify-between">
+        <section class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
           <div>
-            <div class="flex items-center space-x-2 mb-4">
-              <span class="text-xl">📅</span>
-              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Найближчі події</h2>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <span style="font-size: 20px;">📅</span>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Найближчі події</h2>
             </div>
-            <div class="space-y-3">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
               {upcomingEvents.map(event => (
-                <div class="bg-gray-900/50 p-3.5 rounded-xl border border-gray-700/40">
-                  <div class="text-[11px] text-sky-400 font-semibold mb-1">{event.date}</div>
-                  <div class="text-sm font-medium text-white">{event.title}</div>
+                <div style="background: rgba(17, 24, 39, 0.5); border: 1px solid rgba(55, 65, 81, 0.4); padding: 12px; border-radius: 12px;">
+                  <div style="font-size: 11px; color: #38bdf8; font-weight: 600; margin-bottom: 4px;">{event.date}</div>
+                  <div style="font-size: 14px; font-weight: 500; color: white;">{event.title}</div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <!-- БЛОК 4: ШВИДКА НОТАТКА -->
-        <section class="bg-gray-800 p-5 rounded-2xl border border-gray-700/60 shadow-lg lg:col-span-2 flex flex-col justify-between">
+        <!-- БЛОК 4: ШВИДКА НОТАТКА (на 2 колонки) -->
+        <section class="card col-span-2" style="display: flex; flex-direction: column; justify-content: space-between;">
           <div>
-            <div class="flex items-center space-x-2 mb-3">
-              <span class="text-xl">💡</span>
-              <h2 class="text-xs font-bold uppercase tracking-wider text-gray-400">Швидка нотатка / Думка</h2>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="font-size: 20px;">💡</span>
+              <h2 style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #9ca3af; margin: 0;">Швидка нотатка / Думка</h2>
             </div>
-            <div class="space-y-3">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
               <input 
                 type="text" 
                 id="note-input" 
                 placeholder="Введіть думку, посилання чи ідею..." 
-                class="w-full bg-gray-900/70 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition"
+                style="width: 100%; box-sizing: border-box; background: rgba(17, 24, 39, 0.7); border: 1px solid #374151; border-radius: 12px; padding: 12px 16px; font-size: 14px; color: white; outline: none;"
               />
-              <button 
-                id="save-note" 
-                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition shadow-md cursor-pointer"
-              >
+              <button id="save-note" class="btn" style="width: 100%;">
                 Зберегти нотатку
               </button>
             </div>
@@ -182,20 +234,20 @@ const upcomingEvents = [
         </section>
 
       </div>
-    </main>
+    </div>
 
     <script>
       const filterButtons = document.querySelectorAll('.filter-btn');
-      const taskItems = document.querySelectorAll('.task-item');
+      const taskItems = document.querySelectorAll('.task-row');
 
       filterButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           filterButtons.forEach(b => {
-            b.classList.remove('bg-blue-600', 'text-white', 'shadow');
-            b.classList.add('text-gray-400');
+            (b as HTMLElement).style.background = 'transparent';
+            (b as HTMLElement).style.color = '#9ca3af';
           });
-          btn.classList.add('bg-blue-600', 'text-white', 'shadow');
-          btn.classList.remove('text-gray-400');
+          (btn as HTMLElement).style.background = '#2563eb';
+          (btn as HTMLElement).style.color = 'white';
           
           const filter = btn.getAttribute('data-filter');
           taskItems.forEach(item => {
