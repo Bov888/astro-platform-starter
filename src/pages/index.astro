@@ -1,7 +1,4 @@
 ---
-// Імпорт компонента дошки, щоб збірка на Netlify не падала з помилкою
-import KanbanBoard from "../components/KanbanBoard.jsx";
-
 // Приклад даних для сімейної дошки завдань
 const familyTasks = [
   { id: 1, title: "Купити продукти на тиждень", assignee: "Олександр", priority: "Високий", status: "В процесі" },
@@ -10,7 +7,7 @@ const familyTasks = [
   { id: 4, title: "Полити квіти та подбати про сад", assignee: "Антоніна", priority: "Низький", status: "План" },
 ];
 
-// 7-денний прогноз погоди (приклад для Косівського району / Карпат)
+// 7-денний прогноз погоди
 const weatherForecast = [
   { day: "Субота", temp: "+18° / +10°", condition: "Сонячно", sunset: "19:12" },
   { day: "Неділя", temp: "+16° / +9°", condition: "Хмарно", sunset: "19:10" },
@@ -35,7 +32,7 @@ const weatherForecast = [
       <p class="text-slate-400 text-sm mt-1">Організація завдань, нотаток та погоди</p>
     </header>
 
-    <!-- Головна сітка: рівні три колонки на великих екранах -->
+    <!-- Головна сітка: рівні три колонки -->
     <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
       <!-- КОЛОНКА 1: Задачі для родини -->
@@ -89,20 +86,15 @@ const weatherForecast = [
           <div class="bg-slate-900/50 border border-slate-700/40 p-3.5 rounded-lg">
             <h3 class="font-medium text-sm text-amber-300 mb-1">📌 План на тиждень</h3>
             <p class="text-xs text-slate-300 leading-relaxed">
-              Не забудьте перевірити стан ділянки, підготувати матеріали для компостної ями та оновити списки в Anki для англійської.
+              Перевірити стан ділянки, підготувати матеріали для компостної ями та оновити списки в Anki для англійської.
             </p>
           </div>
 
           <div class="bg-slate-900/50 border border-slate-700/40 p-3.5 rounded-lg">
             <h3 class="font-medium text-sm text-indigo-300 mb-1">💡 Ідеї та покупки</h3>
             <p class="text-xs text-slate-300 leading-relaxed">
-              Замовити насіння костриці червоної, перевірити параметри паливної системи авто та налаштувати автоматизацію через MacroDroid.
+              Замовити насіння костриці червоної, перевірити параметри паливної системи авто та налаштувати автоматизацію.
             </p>
-          </div>
-
-          <!-- Інтеграція компонента KanbanBoard у разі потреби -->
-          <div class="mt-4 pt-4 border-t border-slate-700/50">
-            <KanbanBoard client:load />
           </div>
         </div>
       </section>
