@@ -1,5 +1,4 @@
 ---
-// Сторінка побудована на Astro з інтерактивними елементами та збереженням у LocalStorage
 ---
 
 <html lang="uk">
@@ -8,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Родинний Дашборд</title>
     <style>
-      /* Гарантовані стилі, щоб дизайн не злітав незалежно від збірки */
       :root {
         --bg-color: #090d16;
         --card-bg: #111827;
@@ -17,20 +15,51 @@
         --text-muted: #9ca3af;
         --accent: #6366f1;
       }
-      * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; padding: 16px; }
-      header { margin-bottom: 24px; text-align: left; }
-      header h1 { font-size: 1.5rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-      header p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
-      
-      /* Сітка: 3 колонки */
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        min-height: 100vh;
+        padding: 16px;
+      }
+
+      header {
+        margin-bottom: 24px;
+        text-align: left;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      header p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
       .dashboard-grid {
         display: grid;
         grid-template-columns: 1fr;
         gap: 20px;
       }
+
       @media (min-width: 1024px) {
-        .dashboard-grid { grid-template-columns: repeat(3, 1fr); }
+        .dashboard-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
       }
 
       .card {
@@ -43,28 +72,37 @@
         flex-direction: column;
         height: fit-content;
       }
+
       .card-header {
         display: flex;
         align-items: center;
-        justify-between;
+        justify-content: space-between;
         margin-bottom: 16px;
         padding-bottom: 10px;
         border-bottom: 1px solid var(--card-border);
       }
-      .card-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-      
-      /* Задачі */
+
+      .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
       .task-form {
         display: flex;
         flex-direction: column;
         gap: 10px;
         margin-bottom: 16px;
-        background: rgba(0,0,0,0.2);
+        background: rgba(0, 0, 0, 0.2);
         padding: 12px;
         border-radius: 12px;
         border: 1px solid var(--card-border);
       }
-      .task-form input, .task-form select {
+
+      .task-form input,
+      .task-form select {
         background: #1f2937;
         border: 1px solid #374151;
         color: #fff;
@@ -73,6 +111,7 @@
         font-size: 0.85rem;
         width: 100%;
       }
+
       .btn {
         background: var(--accent);
         color: #fff;
@@ -84,9 +123,19 @@
         font-size: 0.85rem;
         transition: background 0.2s;
       }
-      .btn:hover { background: #4f46e5; }
-      
-      .tasks-list { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; }
+
+      .btn:hover {
+        background: #4f46e5;
+      }
+
+      .tasks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 450px;
+        overflow-y: auto;
+      }
+
       .task-item {
         background: rgba(17, 24, 39, 0.6);
         border: 1px solid var(--card-border);
@@ -96,17 +145,62 @@
         flex-direction: column;
         gap: 6px;
       }
-      .task-top { display: flex; justify-between; align-items: flex-start; gap: 8px; }
-      .task-name { font-size: 0.9rem; font-weight: 600; color: #f3f4f6; }
-      .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 6px; font-weight: 700; text-transform: uppercase; }
-      .badge-high { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
-      .badge-medium { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-      .badge-low { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-      
-      .task-footer { display: flex; justify-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); }
-      .assignee { color: #818cf8; font-weight: 600; background: rgba(99, 102, 241, 0.1); padding: 2px 6px; border-radius: 4px; }
-      
-      /* Нотатки */
+
+      .task-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .task-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #f3f4f6;
+      }
+
+      .badge {
+        font-size: 0.7rem;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .badge-high {
+        background: rgba(244, 63, 94, 0.15);
+        color: #fb7185;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+      }
+
+      .badge-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
+
+      .badge-low {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
+
+      .task-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .assignee {
+        color: #818cf8;
+        font-weight: 600;
+        background: rgba(99, 102, 241, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
       textarea.notes-area {
         width: 100%;
         height: 250px;
@@ -119,10 +213,22 @@
         resize: vertical;
         line-height: 1.5;
       }
-      .save-status { font-size: 0.75rem; color: #34d399; margin-top: 6px; height: 16px; }
 
-      /* Погода */
-      .weather-list { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; }
+      .save-status {
+        font-size: 0.75rem;
+        color: #34d399;
+        margin-top: 6px;
+        height: 16px;
+      }
+
+      .weather-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 480px;
+        overflow-y: auto;
+      }
+
       .weather-row {
         background: rgba(17, 24, 39, 0.6);
         border: 1px solid var(--card-border);
@@ -132,29 +238,47 @@
         justify-content: space-between;
         align-items: center;
       }
-      .weather-day { font-weight: 600; font-size: 0.85rem; }
-      .weather-cond { font-size: 0.75rem; color: var(--text-muted); }
-      .weather-right { text-align: right; }
-      .temp { font-weight: 700; font-size: 0.85rem; color: #38bdf8; }
-      .sun-time { font-size: 0.75rem; color: #fbbf24; margin-top: 2px; }
+
+      .weather-day {
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+
+      .weather-cond {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+
+      .weather-right {
+        text-align: right;
+      }
+
+      .temp {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #38bdf8;
+      }
+
+      .sun-time {
+        font-size: 0.75rem;
+        color: #fbbf24;
+        margin-top: 2px;
+      }
     </style>
   </head>
+
   <body>
-    
     <header>
       <h1><span>🏡</span> Родинний Дашборд</h1>
-      <p>Керування завданнями, нотатками та погодою (зберігається локально на вашому пристрої)</p>
+      <p>Керування завданнями, нотатками та погодою</p>
     </header>
 
     <main class="dashboard-grid">
-
-      <!-- КОЛОНКА 1: ЗАДАЧІ -->
       <section class="card">
         <div class="card-header">
           <div class="card-title" style="color: #818cf8;"><span>📋</span> Сімейні задачі</div>
         </div>
 
-        <!-- Форма додавання задачі -->
         <form id="taskForm" class="task-form">
           <input type="text" id="taskTitle" placeholder="Нова задача..." required />
           <select id="taskAssignee">
@@ -178,137 +302,140 @@
           <button type="submit" class="btn">Додати задачу</button>
         </form>
 
-        <div id="tasksList" class="tasks-list">
-          <!-- Динамічно заповнюється через JS -->
-        </div>
+        <div id="tasksList" class="tasks-list"></div>
       </section>
 
-      <!-- КОЛОНКА 2: НОТАТКИ -->
       <section class="card">
         <div class="card-header">
           <div class="card-title" style="color: #fbbf24;"><span>📝</span> Швидкі нотатки</div>
         </div>
         <div style="flex: 1; display: flex; flex-direction: column;">
-          <textarea id="quickNotes" class="notes-area" placeholder="Пишіть сюди будь-які нотатки, списки чи плани. Зберігається автоматично..."></textarea>
+          <textarea id="quickNotes" class="notes-area" placeholder="Пишіть сюди..." aria-label="Швидкі нотатки"></textarea>
           <div id="saveStatus" class="save-status"></div>
         </div>
       </section>
 
-      <!-- КОЛОНКА 3: ПОГОДА ТА СОНЦЕ НА 7 ДНІВ -->
       <section class="card">
         <div class="card-header">
           <div class="card-title" style="color: #38bdf8;"><span>⛅</span> Погода у Карпатах</div>
-          <span style="font-size: 0.7rem; background: rgba(56,189,248,0.1); color: #38bdf8; padding: 2px 8px; border-radius: 6px;">7 днів</span>
+          <span style="font-size: 0.7rem; background: rgba(56,189,248,0.1); color: #38bdf8; padding: 2px 8px; border-radius: 6px;">
+            7 днів
+          </span>
         </div>
 
         <div class="weather-list">
           <div class="weather-row">
-            <div><div class="weather-day">Сьогодні (Сб)</div><div class="weather-cond">Сонячно</div></div>
-            <div class="weather-right"><div class="temp">+18° / +10°</div><div class="sun-time">🌅 06:15 🌇 19:12</div></div>
+            <div>
+              <div class="weather-day">Сьогодні (Сб)</div>
+              <div class="weather-cond">Сонячно</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+18° / +10°</div>
+              <div class="sun-time">🌅 06:15 🌇 19:12</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">Неділя</div><div class="weather-cond">Змінна хмарність</div></div>
-            <div class="weather-right"><div class="temp">+16° / +9°</div><div class="sun-time">🌅 06:17 🌇 19:10</div></div>
+            <div>
+              <div class="weather-day">Неділя</div>
+              <div class="weather-cond">Змінна хмарність</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+16° / +9°</div>
+              <div class="sun-time">🌅 06:17 🌇 19:10</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">Понеділок</div><div class="weather-cond">Невеликий дощ</div></div>
-            <div class="weather-right"><div class="temp">+15° / +8°</div><div class="sun-time">🌅 06:18 🌇 19:08</div></div>
+            <div>
+              <div class="weather-day">Понеділок</div>
+              <div class="weather-cond">Невеликий дощ</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+15° / +8°</div>
+              <div class="sun-time">🌅 06:18 🌇 19:08</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">Вівторок</div><div class="weather-cond">Хмарно</div></div>
-            <div class="weather-right"><div class="temp">+17° / +9°</div><div class="sun-time">🌅 06:20 🌇 19:06</div></div>
+            <div>
+              <div class="weather-day">Вівторок</div>
+              <div class="weather-cond">Хмарно</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+17° / +9°</div>
+              <div class="sun-time">🌅 06:20 🌇 19:06</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">Середа</div><div class="weather-cond">Ясно</div></div>
-            <div class="weather-right"><div class="temp">+19° / +11°</div><div class="sun-time">🌅 06:22 🌇 19:04</div></div>
+            <div>
+              <div class="weather-day">Середа</div>
+              <div class="weather-cond">Ясно</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+19° / +11°</div>
+              <div class="sun-time">🌅 06:22 🌇 19:04</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">Четвер</div><div class="weather-cond">Сонячно</div></div>
-            <div class="weather-right"><div class="temp">+18° / +10°</div><div class="sun-time">🌅 06:23 🌇 19:02</div></div>
+            <div>
+              <div class="weather-day">Четвер</div>
+              <div class="weather-cond">Сонячно</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+18° / +10°</div>
+              <div class="sun-time">🌅 06:23 🌇 19:02</div>
+            </div>
           </div>
+
           <div class="weather-row">
-            <div><div class="weather-day">П'ятниця</div><div class="weather-cond">Хмарно</div></div>
-            <div class="weather-right"><div class="temp">+16° / +9°</div><div class="sun-time">🌅 06:25 🌇 19:00</div></div>
+            <div>
+              <div class="weather-day">П'ятниця</div>
+              <div class="weather-cond">Хмарно</div>
+            </div>
+            <div class="weather-right">
+              <div class="temp">+16° / +9°</div>
+              <div class="sun-time">🌅 06:25 🌇 19:00</div>
+            </div>
           </div>
         </div>
       </section>
-
     </main>
 
     <script>
-      // --- Логіка збереження та роботи з задачами ---
-      const defaultTasks = [
-        { id: 1, title: "Купити продукти на тиждень", assignee: "Олександр", priority: "Високий", status: "В процесі" },
-        { id: 2, title: "Записати дитину на секцію", assignee: "Людмила", priority: "Середній", status: "Виконано" },
-        { id: 3, title: "Зробити домашнє завдання з математики", assignee: "Максим", priority: "Високий", status: "План" },
-        { id: 4, title: "Полити квіти та подбати про сад", assignee: "Антоніна", priority: "Низький", status: "План" }
-      ];
+      const defaultNote = `📌 План на тиждень:
+- Перевірити стан ділянки та компостну яму
+- Організувати закупівлю продуктів
+- Підтвердити час на секції для дитини
+- Підготувати список покупок для вихідних`;
 
-      let tasks = JSON.parse(localStorage.getItem('family_dashboard_tasks')) || defaultTasks;
-
+      let tasks = [];
       const tasksListEl = document.getElementById('tasksList');
       const taskForm = document.getElementById('taskForm');
+      const notesArea = document.getElementById('quickNotes');
+      const saveStatus = document.getElementById('saveStatus');
+      let saveTimer;
+
+      function getPriorityClass(priority) {
+        if (priority === 'Високий') return 'badge-high';
+        if (priority === 'Середній') return 'badge-medium';
+        return 'badge-low';
+      }
 
       function renderTasks() {
         tasksListEl.innerHTML = '';
+
         tasks.forEach((task, index) => {
-          const priorityClass = task.priority === 'Високий' ? 'badge-high' : task.priority === 'Середній' ? 'badge-medium' : 'badge-low';
-          
           const div = document.createElement('div');
           div.className = 'task-item';
+
           div.innerHTML = `
             <div class="task-top">
               <span class="task-name">${task.title}</span>
-              <span class="badge ${priorityClass}">${task.priority}</span>
+              <span class="badge ${getPriorityClass(task.priority)}">${task.priority}</span>
             </div>
             <div class="task-footer">
               <span class="assignee">👤 ${task.assignee}</span>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <span>${task.status}</span>
-                <button onclick="window.deleteTask(${index})" style="background:none; border:none; color:#f43f5e; cursor:pointer; font-size:0.8rem;">✕</button>
-              </div>
-            </div>
-          `;
-          tasksListEl.appendChild(div);
-        });
-        localStorage.setItem('family_dashboard_tasks', JSON.stringify(tasks));
-      }
-
-      window.deleteTask = function(index) {
-        tasks.splice(index, 1);
-        renderTasks();
-      }
-
-      taskForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const title = document.getElementById('taskTitle').value;
-        const assignee = document.getElementById('taskAssignee').value;
-        const priority = document.getElementById('taskPriority').value;
-        const status = document.getElementById('taskStatus').value;
-
-        tasks.unshift({ id: Date.now(), title, assignee, priority, status });
-        document.getElementById('taskTitle').value = '';
-        renderTasks();
-      });
-
-      renderTasks();
-
-      // --- Логіка нотаток з автозбереженням ---
-      const notesArea = document.getElementById('quickNotes');
-      const saveStatus = document.getElementById('saveStatus');
-
-      notesArea.value = localStorage.getItem('family_dashboard_notes') || "📌 План на тиждень:\n- Перевірити стан ділянки та компостну яму\n- Оновити Anki для англійської\n\n💡 Ідеї та покупки:\n- Насіння костриці червоної\n- Перевірка паливної системи Golf 2";
-
-      let saveTimer;
-      notesArea.addEventListener('input', () => {
-        saveStatus.textContent = 'Збереження...';
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-          localStorage.setItem('family_dashboard_notes', notesArea.value);
-          saveStatus.textContent = 'Збережено автоматично ✓';
-          setTimeout(() => { saveStatus.textContent = ''; }, 2000);
-        }, 500);
-      });
-    </script>
-  </body>
-</html>
+              <div style="display: flex; gap
