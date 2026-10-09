@@ -1,0 +1,22 @@
+---
+const lat = 48.31;
+const lon = 25.09;
+const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,sunset&timezone=Europe%2FKyiv`;
+
+const response = await fetch(url);
+const weatherData = await response.json();
+---
+<div class="bg-blue-50 p-4 rounded-lg shadow-sm">
+  <h3 class="font-bold text-lg mb-2">Погода</h3>
+  <p class="mb-4">Захід сонця сьогодні: {new Date(weatherData.daily.sunset[0]).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}</p>
+  
+  <div class="grid grid-cols-7 gap-2 text-sm">
+    {weatherData.daily.time.map((date: string, index: number) => (
+      <div class="flex flex-col items-center bg-white p-2 rounded border">
+        <span class="font-semibold">{new Date(date).toLocaleDateString('uk-UA', { weekday: 'short' })}</span>
+        <span class="text-gray-500">{weatherData.daily.temperature_2m_min[index]}°</span>
+        <span class="font-bold">{weatherData.daily.temperature_2m_max[index]}°</span>
+      </div>
+    ))}
+  </div>
+</div>
