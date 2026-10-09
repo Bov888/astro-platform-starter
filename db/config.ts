@@ -19,4 +19,4 @@ const Note = defineTable({
   },
 });
 
-export default defineDb({ tables: { Task, Note } }); 
+export default defineDb({ tables: { Task, Note } });
