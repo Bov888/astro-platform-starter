@@ -1,4 +1,21 @@
 ---
+/*
+SQL для Supabase (виконати один раз у SQL Editor):
+
+create table wp_tasks(
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  kind text not null default 'out',
+  profile text,
+  date date not null,
+  duration int not null default 1,
+  done boolean not null default false,
+  created_at timestamptz default now()
+);
+alter table wp_tasks enable row level security;
+create policy "anon all" on wp_tasks for all using (true) with check (true);
+notify pgrst, 'reload schema';
+*/
 ---
 <!DOCTYPE html>
 <html lang="uk">
@@ -16,93 +33,84 @@
 :root[data-theme=dark]{color-scheme:dark;--bg:#151d1b;--card:#1e2926;--line:#2f3f3a;--fg:#e4ece9;--mut:#8fa49d;--go:#5cc9a0;--maybe:#e8bf5a;--no:#ea7c63;--acc:#7fe3bd;--on:#0e2a20;--sel:#23403a}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;padding:12px;height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:12px;background:var(--bg);color:var(--fg);font:clamp(14px,1.9vh,18px)/1.4 "Trebuchet MS",system-ui,sans-serif}
-h1{font-size:1.4em;margin:0;color:var(--acc)}
-h3{margin:0 0 6px;font-size:1.3em;text-transform:capitalize}
-button,select,input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
-button{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
-button:hover{border-color:var(--acc)}
+body{margin:0;padding:10px;height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:10px;background:var(--bg);color:var(--fg);font:clamp(13px,1.7vh,16px)/1.4 "Trebuchet MS",system-ui,sans-serif}
+h1{font-size:1.3em;margin:0;color:var(--acc)}
+h3{margin:0 0 4px;font-size:1.25em;text-transform:capitalize}
+button,select,input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
 .pri{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
 .pri:hover{filter:brightness(1.08)}
 button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;flex:none}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:none}
 #src{display:flex;gap:6px}
-.chip{font-size:.85em;padding:2px 10px;border-radius:99px;border:1px solid var(--line);background:var(--card)}
+.chip{font-size:.8em;padding:1px 9px;border-radius:99px;border:1px solid var(--line);background:var(--card)}
 .chip.ok{border-color:var(--go);color:var(--go);background:color-mix(in srgb,var(--go) 12%,var(--card))}
 .chip.bad{border-color:var(--no);color:var(--no);cursor:default}
 .chip.off{border-style:dashed;color:var(--mut);text-decoration:line-through}
-#note{color:var(--no);font-size:.95em}
-#ss,#fs{font-size:.95em;color:var(--mut)}#ss.ok,#fs.ok{color:var(--go)}#ss.bad,#fs.bad{color:var(--no)}
-.fh{margin-top:16px;text-transform:none}
-.ft{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;margin-top:6px;border-left:5px solid var(--maybe);border-radius:8px;background:var(--bg)}
+#note{color:var(--no);font-size:.9em}
+#ss,#fs{font-size:.9em;color:var(--mut)}#ss.ok,#fs.ok{color:var(--go)}#ss.bad,#fs.bad{color:var(--no)}
+.fh{margin-top:14px;text-transform:none}
+.ft{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:5px 8px;margin-top:4px;border-left:4px solid var(--maybe);border-radius:6px;background:var(--bg)}
 .ft[data-p="1"]{border-left-color:var(--no)}.ft[data-p="3"]{border-left-color:var(--go)}
-.f-sel{padding:4px 8px;font-size:.9em;border-radius:6px;min-width:90px;background:var(--card);border:1px solid var(--line);cursor:pointer}
-.right{margin-left:auto;display:flex;gap:10px;align-items:center}
+.right{margin-left:auto;display:flex;gap:8px;align-items:center}
 details{position:relative}
 summary{cursor:pointer;list-style:none}
 summary::-webkit-details-marker{display:none}
-.ib{width:38px;height:38px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+.ib{width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
 .ib:hover,details[open]>.ib{border-color:var(--acc);color:var(--acc)}
-.ib svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-details>div{position:absolute;right:0;top:100%;z-index:5;display:grid;gap:8px;width:400px;max-width:92vw;max-height:calc(100dvh - 80px);overflow:auto;margin-top:8px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(20,40,30,.2)}
-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}
-.card{display:flex;flex-direction:column;min-height:0;padding:16px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+details>div{position:absolute;right:0;top:100%;z-index:5;display:grid;gap:6px;width:380px;max-width:92vw;max-height:calc(100dvh - 70px);overflow:auto;margin-top:6px;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(20,40,30,.18)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px}
+.card{display:flex;flex-direction:column;min-height:0;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:14px}
 .mut{color:var(--mut);margin:2px 0}
-.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:1.2em;flex:none}
-.dws{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;flex:none;margin-bottom:6px}
-.dw{text-align:center;color:var(--mut);font-size:.9em;font-style:normal;font-weight:bold}
-#cal{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:8px}
-.c{position:relative;min-height:0;padding:8px 10px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:var(--bg);border:2px solid var(--line);border-radius:12px;color:var(--fg)}
-.c b{font-size:clamp(16px,3vh,28px)}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:1.15em;flex:none}
+.dws{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:none;margin-bottom:4px}
+.dw{text-align:center;color:var(--mut);font-size:.85em;font-style:normal}
+#cal{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:6px}
+.c{position:relative;min-height:0;padding:6px 8px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:var(--bg);border:2px solid var(--line);border-radius:12px;color:var(--fg)}
+.c b{font-size:clamp(15px,2.8vh,24px)}
 .c small{color:var(--mut);font-size:clamp(12px,1.9vh,16px)}
-.c em{position:absolute;top:8px;right:10px;font-style:normal;font-size:.95em;color:var(--acc);font-weight:700}
+.c em{position:absolute;top:6px;right:8px;font-style:normal;font-size:.9em;color:var(--acc);font-weight:700}
 .c.s2{border-color:var(--go);background:color-mix(in srgb,var(--go) 14%,var(--card))}
 .c.s1{border-color:var(--maybe);background:color-mix(in srgb,var(--maybe) 14%,var(--card))}
 .c.s0{border-color:color-mix(in srgb,var(--no) 55%,var(--line));background:color-mix(in srgb,var(--no) 8%,var(--card))}
-.c.sn{opacity:.6}
-.c.sel{box-shadow:0 0 0 4px var(--acc)}
+.c.sn{opacity:.55}
+.c.sel{box-shadow:0 0 0 3px var(--acc)}
 .c.td b{color:var(--acc);text-decoration:underline}
-.bt{display:flex;flex-direction:column;gap:2px}
-.c .sun{font-size:clamp(11px,1.6vh,14px)}
-.sunbar{position:relative;height:10px;margin:10px 0 6px;border-radius:99px;background:color-mix(in srgb,var(--fg) 14%,var(--card))}
+.bt{display:flex;flex-direction:column}
+.c .sun{font-size:clamp(10px,1.5vh,13px)}
+.sunbar{position:relative;height:8px;margin:8px 0 4px;border-radius:99px;background:color-mix(in srgb,var(--fg) 14%,var(--card))}
 .sunbar i{position:absolute;top:0;bottom:0;border-radius:99px;background:var(--maybe)}
-.sunbar b.now-bar{position:absolute;top:-4px;bottom:-4px;width:4px;margin-left:-2px;border-radius:3px;background:var(--acc);display:block}
-.sunt{display:flex;justify-content:space-between;gap:8px;font-size:.95em;color:var(--mut)}
-.legend{flex:none;margin:12px 0 0;font-size:.85em;color:var(--mut);line-height:1.5}
+.sunbar u{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;border-radius:2px;background:var(--acc)}
+.sunt{display:flex;justify-content:space-between;gap:6px;font-size:.9em;color:var(--mut)}
+.legend{flex:none;margin:8px 0 0;font-size:.85em;color:var(--mut)}
 #day{overflow:hidden}
 .dtop{flex:none}
-.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:12px 0}
-.h{font-size:1.1em;text-align:center;padding:8px 2px;border-radius:10px;background:var(--bg);border-bottom:6px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center}
-.h span{display:block;color:var(--mut);font-size:0.8em;font-weight:bold}
-.h b{font-size:1.1em;margin-top:2px}
-.wi{display:block;font-size:0.85em;margin:4px 0;font-style:normal;line-height:1;font-weight:bold;color:var(--mut)}
+.strip{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin:6px 0}
+.h{font-size:.8em;text-align:center;padding:2px 0;border-radius:6px;background:var(--bg);border-bottom:4px solid var(--line)}
+.h span{display:block;color:var(--mut)}
 .h.s2{border-color:var(--go);background:color-mix(in srgb,var(--go) 14%,var(--card))}
 .h.s1{border-color:var(--maybe);background:color-mix(in srgb,var(--maybe) 14%,var(--card))}
 .h.s0{border-color:color-mix(in srgb,var(--no) 55%,var(--line))}
-table{border-collapse:collapse;width:100%;font-size:.9em}
-td,th{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}th{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:.88em}
+td,th{padding:2px 6px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}th{color:var(--mut)}
 tr.off td{opacity:.45;text-decoration:line-through}
-#pt th{font-size:.85em;line-height:1.2}
-#pt td,#pt th{padding:4px 4px}
-#pt input{width:100%;min-width:0;padding:4px 6px;text-align:center}
-.tl{flex:1;min-height:0;overflow-y:auto;margin-top:12px;padding-right:4px}
-.t{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+#pt th{font-size:.8em;line-height:1.2}
+#pt td,#pt th{padding:2px 3px}
+#pt input{width:100%;min-width:0;padding:2px 4px;text-align:center}
+.tl{flex:1;min-height:0;overflow-y:auto;margin-top:8px;padding-right:2px}
+.t{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
 .t.dn b{text-decoration:line-through;opacity:.6}
-.t button{padding:4px 10px;font-size:.9em}
+.t button{padding:2px 8px}
 .t .s2{color:var(--go)}.t .s1{color:var(--maybe)}.t .s0{color:var(--no)}.in,.n{color:var(--mut)}
-form{display:flex;flex-wrap:wrap;gap:8px;flex:none;margin-top:12px}
-form input[name=title]{flex:1 1 160px;min-width:0}
-form input[type=number]{width:64px}
-@media(max-width:900px){
+form{display:flex;flex-wrap:wrap;gap:6px;flex:none;margin-top:8px}
+form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:56px}
+@media(max-width:820px){
   body{height:auto;overflow:auto}
   main{grid-template-columns:1fr}
-  #cal{grid-auto-rows:75px}
+  #cal{grid-auto-rows:64px}
   .c .sun{display:none}
   #day{overflow:visible}.tl{overflow:visible}
-  .strip{grid-template-columns:repeat(8,1fr)}
-}
-@media(max-width:500px){
-  .strip{grid-template-columns:repeat(6,1fr)}
 }
 </style>
 </head>
@@ -128,7 +136,7 @@ form input[type=number]{width:64px}
         <label>Довгота <input id="lon"></label>
         <label>Supabase URL <input id="url" placeholder="https://xxx.supabase.co"></label>
         <label>Supabase anon key <input id="key"></label>
-        <b>Родинна дошка</b>
+        <b>Родинна дошка (лише перегляд моїх задач)</b>
         <label>URL проєкту дошки <input id="furl" placeholder="https://xxx.supabase.co"></label>
         <label>Ключ дошки (publishable або anon) <input id="fkey"></label>
         <label>Моє ім'я в дошці <input id="fperson"></label>
@@ -148,7 +156,7 @@ form input[type=number]{width:64px}
     <div class="nav"><button id="pm" aria-label="Попередній місяць">‹</button><b id="mt"></b><button id="nm" aria-label="Наступний місяць">›</button></div>
     <div class="dws" id="dws"></div>
     <div id="cal"></div>
-    <p class="legend">Зелена рамка: є вікно на 2 години, джерела згодні. Жовта: джерела розходяться. Червона: вікон немає. Сіра: прогнозу ще немає. Натисни на назву джерела вгорі, щоб увімкнути/вимкнути.</p>
+    <p class="legend">Зелена рамка: є вікно на 2 години, джерела згодні. Жовта: джерела розходяться. Червона: вікон немає. Сіра: прогнозу ще немає. Натисни на назву джерела вгорі, щоб увімкнути або вимкнути його в розрахунках.</p>
   </section>
   <section class="card" id="day"></section>
 </main>
@@ -180,7 +188,7 @@ const fh=x=>{const m=Math.round(x*60);return pad(Math.floor(m/60)%24)+':'+pad(m%
 const rng=r=>r.map(([a,b])=>fh(a)+'–'+fh(b)).join(', ');
 const fmtDate=d=>new Date(d+'T12:00').toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'});
 const note=m=>{$('#note').textContent=m||''};
-
+/* значення лише з увімкнених джерел */
 const act=o=>Object.entries(o).filter(([k])=>!off.has(k)).map(([,v])=>v);
 function avail(){
   const s=new Set();
@@ -233,6 +241,7 @@ async function loadWeather(){
   }catch(e){}
 }
 
+/* 2 — усі джерела згодні, 1 — розходяться, 0 — не підходить, null — немає даних */
 function hourSt(d,h,pf){
   const P=PROFILES[pf],s=SUN[d],o=H[d]?.[h];if(!o)return null;
   const v=act(o),n=v.length;if(!n)return null;
@@ -294,91 +303,67 @@ function taskInfo(t){
 function renderCal(){
   const y=cur.getFullYear(),m=cur.getMonth();
   $('#mt').textContent=MON[m]+' '+y;
-  $('#dws').innerHTML=DOW.map(d=>'<i class="dw">'+d+'</i>').join('');
+  $('#dws').innerHTML=DOW.map(d=>`<i class="dw">${d}</i>`).join('');
   let h='';
   const first=(new Date(y,m,1).getDay()+6)%7,nd=new Date(y,m+1,0).getDate();
   for(let i=0;i<first;i++)h+='<i></i>';
   for(let d=1;d<=nd;d++){
-    const ds=y+'-'+pad(m+1)+'-'+pad(d),w=win(ds,pf,2),inf=dayInfo(ds);
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`,w=win(ds,pf,2),inf=dayInfo(ds);
     const nt=tasks.filter(t=>t.date===ds&&!t.done).length;
-    h+='<button class="c s'+(w.st==null?'n':w.st)+(ds===sel?' sel':'')+(ds===today?' td':'')+'" data-d="'+ds+'"><b>'+d+'</b>'+
-       '<div class="bt">'+(inf?'<small>'+Math.round(inf.tmax)+'°'+(inf.rain>=0.5?' дощ':'')+'</small>':'<small>&nbsp;</small>')+
-       (SUN[ds]?'<small class="sun">↑'+fh(SUN[ds].sr)+' ↓'+fh(SUN[ds].ss)+'</small>':'')+'</div>'+
-       (nt?'<em>'+nt+'</em>':'')+'</button>';
+    h+=`<button class="c s${w.st==null?'n':w.st}${ds===sel?' sel':''}${ds===today?' td':''}" data-d="${ds}"><b>${d}</b>`+
+       `<div class="bt">`+(inf?`<small>${Math.round(inf.tmax)}°${inf.rain>=0.5?' дощ':''}</small>`:'<small>&nbsp;</small>')+
+       (SUN[ds]?`<small class="sun">↑${fh(SUN[ds].sr)} ↓${fh(SUN[ds].ss)}</small>`:'')+`</div>`+
+       (nt?`<em>${nt}</em>`:'')+`</button>`;
   }
   $('#cal').innerHTML=h;
 }
 
 function renderDay(){
   const d=sel,s=SUN[d],P=PROFILES[pf];
-  let h='<div class="dtop"><h3>'+fmtDate(d)+'</h3>';
+  let h=`<div class="dtop"><h3>${fmtDate(d)}</h3>`;
   if(s){
     const L=s.ss-s.sr,tm=Math.round(L*60),pv=SUN[new Date(new Date(d+'T12:00').getTime()-864e5).toLocaleDateString('en-CA')];
     const dl=pv?Math.round((L-(pv.ss-pv.sr))*60):null;
     const now=d===today?(local(new Date())[1]+new Date().getMinutes()/60)/24*100:null;
-    h+='<div class="sunbar" title="Світловий день на шкалі 0–24 год"><i style="left:'+(s.sr/24*100)+'%;width:'+(L/24*100)+'%"></i>'+(now!=null?'<b class="now-bar" style="left:'+now+'%"></b>':'')+'</div>'+
-       '<div class="sunt"><span>↑ схід '+fh(s.sr)+'</span><span>'+Math.floor(tm/60)+' год '+tm%60+' хв'+(dl==null||dl===0?'':', '+(dl>0?'+':'−')+Math.abs(dl)+' хв до вчора')+'</span><span>захід '+fh(s.ss)+' ↓</span></div>';
+    h+=`<div class="sunbar" title="Світловий день на шкалі 0–24 год"><i style="left:${s.sr/24*100}%;width:${L/24*100}%"></i>${now!=null?`<u style="left:${now}%"></u>`:''}</div>`+
+       `<div class="sunt"><span>↑ схід ${fh(s.sr)}</span><span>${Math.floor(tm/60)} год ${tm%60} хв${dl==null||dl===0?'':`, ${dl>0?'+':'−'}${Math.abs(dl)} хв до вчора`}</span><span>захід ${fh(s.ss)} ↓</span></div>`;
   }
   if(H[d]){
-    h+='<div class="strip">';
-    for(let x=0; x<24; x++){
+    h+=`<div class="strip">`+[...Array(24).keys()].map(x=>{
       const st=hourSt(d,x,pf),o=H[d][x],a=o?act(o):[];
-      if(!a.length){
-        h+='<div class="h s'+(st==null?'n':st)+'"><span>'+pad(x)+':00</span><i class="wi">?</i><b>—</b></div>';
-        continue;
-      }
-      const t=Math.round(med(a.map(v=>v.t)));
-      const rain=med(a.map(v=>v.p));
-      const isDay=s && (x >= Math.floor(s.sr) && x < Math.ceil(s.ss));
-      let icon='Ясно';
-      if(rain>=1)icon='Злива';
-      else if(rain>0.1)icon='Дощ';
-      else if(!isDay)icon='Ніч';
-      else if(rain>0)icon='Млиця';
-      h+='<div class="h s'+(st==null?'n':st)+'"><span>'+pad(x)+':00</span><i class="wi">'+icon+'</i><b>'+t+'°</b></div>';
-    }
-    h+='</div>';
-    h+='<p class="mut">«'+P.n+'»: '+P.tmin+'…'+P.tmax+'°, вітер до '+P.w+' км/год, опади до '+P.p+' мм/год, лише вдень.</p>';
-    h+='<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>';
-    for(const [k,v] of Object.entries(srcStats(d))){
-      h+='<tr'+(off.has(k)?' class="off"':'')+'><td>'+k+'</td><td>'+Math.round(v.tmin)+'…'+Math.round(v.tmax)+'°</td><td>'+v.p.toFixed(1)+' мм</td><td>'+Math.round(v.w)+' км/год</td></tr>';
-    }
-    h+='</table>';
-  }else h+='<p class="mut">Прогноз на цю дату ще недоступний.</p>';
-  h+='</div><div class="tl"><h3 style="text-transform:none">Справи</h3>';
+      const t=a.length?Math.round(med(a.map(v=>v.t))):'';
+      return `<div class="h s${st==null?'n':st}"><span>${x}</span>${t}°</div>`;
+    }).join('')+`</div>`;
+    h+=`<p class="mut">«${P.n}»: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год, лише вдень.</p>`;
+    h+=`<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
+      Object.entries(srcStats(d)).map(([k,v])=>`<tr${off.has(k)?' class="off"':''}><td>${k}</td><td>${Math.round(v.tmin)}…${Math.round(v.tmax)}°</td><td>${v.p.toFixed(1)} мм</td><td>${Math.round(v.w)} км/год</td></tr>`).join('')+`</table>`;
+  }else h+=`<p class="mut">Прогноз на цю дату ще недоступний.</p>`;
+  h+=`</div><div class="tl"><h3 style="text-transform:none">Справи</h3>`;
   const list=tasks.filter(t=>t.date===d);
-  if(!list.length)h+='<p class="mut">Справ поки немає. Додай першу нижче.</p>';
+  if(!list.length)h+=`<p class="mut">Справ поки немає. Додай першу нижче.</p>`;
   for(const t of list){
     const i=taskInfo(t);
-    h+='<div class="t'+(t.done?' dn':'')+'"><div><b>'+esc(t.title)+'</b> <span class="mut">'+(t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична')+', '+t.duration+' год</span>'+
-       '<div class="'+i.c+'">'+i.txt+
-       (i.alt?'<br>Найближче вікно: '+fmtDate(i.alt.d)+', '+rng(i.alt.w.r)+' <button data-mv="'+t.id+'" data-to="'+i.alt.d+'">Перенести</button>':(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
-       '</div></div><div><button data-dn="'+t.id+'" aria-label="Готово">Готово</button> <button data-rm="'+t.id+'" aria-label="Видалити">Видалити</button></div></div>';
+    h+=`<div class="t${t.done?' dn':''}"><div><b>${esc(t.title)}</b> <span class="mut">${t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична'}, ${t.duration} год</span>`+
+       `<div class="${i.c}">${i.txt}`+
+       (i.alt?`<br>Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button>`:(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
+       `</div></div><div><button data-dn="${t.id}" aria-label="Готово">Готово</button> <button data-rm="${t.id}" aria-label="Видалити">Видалити</button></div></div>`;
   }
   h+=famHtml();
-  h+='</div><form id="add"><input name="title" placeholder="Що зробити" required>'+
-     '<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>'+
-     '<select name="profile">';
-  for(const [k,v] of Object.entries(PROFILES)){
-    h+='<option value="'+k+'"'+(k===pf?' selected':'')+'>'+v.n+'</option>';
-  }
-  h+='</select><input name="duration" type="number" min="1" max="12" value="1" aria-label="Тривалість, год"><button class="pri">Додати</button></form>';
+  h+=`</div><form id="add"><input name="title" placeholder="Що зробити" required>`+
+     `<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>`+
+     `<select name="profile">${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===pf?' selected':''}>${v.n}</option>`).join('')}</select>`+
+     `<input name="duration" type="number" min="1" max="12" value="1" aria-label="Тривалість, год">`+
+     `<button class="pri">Додати</button></form>`;
   $('#day').innerHTML=h;
 }
-
 function renderSrc(){
   const have=avail();
-  let h='';
-  for(const k of SOURCES){
-    const unavail=!have.has(k), disabled=off.has(k);
-    const cls='chip '+(unavail?'bad':disabled?'off':'ok');
-    const title=unavail?'Джерело недоступне':disabled?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути';
-    h+='<button class="'+cls+'" data-s="'+k+'" title="'+title+'">'+k+'</button>';
-  }
-  $('#src').innerHTML=h;
+  $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${!have.has(k)?'Джерело недоступне':off.has(k)?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути'}">${k}</button>`).join('');
 }
 function render(){renderSrc();renderDb();renderCal();renderDay()}
 
+/* зберігання: Supabase або localStorage як запасний варіант */
+/* родинна дошка: окремий клієнт Supabase, лише читання */
 let fsb=null,fsbId='',famTasks=[],famState={mode:'off',msg:''};
 const FS={todo:'До виконання',doing:'В роботі'};
 async function famLoad(){
@@ -398,37 +383,17 @@ async function famLoad(){
 function famInfo(){
   const m=famState.mode;
   if(m==='login')return ' Родинна дошка: виконай вхід нижче.';
-  if(m==='ok')return ' Родинна дошка: задач для «'+cfg.fperson+'»: '+famTasks.length+'.';
-  if(m==='err')return ' Родинна дошка: помилка ('+famState.msg+').';
+  if(m==='ok')return ` Родинна дошка: задач для «${cfg.fperson}»: ${famTasks.length}.`;
+  if(m==='err')return ` Родинна дошка: помилка (${famState.msg}).`;
   return '';
 }
 function famHtml(){
   const m=famState.mode;if(m==='off')return '';
-  const h='<h3 class="fh">З родинної дошки</h3>';
+  const h=`<h3 class="fh">З родинної дошки (лише перегляд)</h3>`;
   if(m==='login')return h+'<p class="mut">Щоб бачити задачі, увійди в налаштуваннях (шестірня, розділ «Вхід у родинну дошку»).</p>';
-  if(m==='err')return h+'<p class="s0">Не вдалося завантажити: '+esc(famState.msg)+'</p>';
-  if(!famTasks.length)return h+'<p class="mut">Відкритих задач для «'+esc(cfg.fperson)+'» немає.</p>';
-  
-  let res=h;
-  for(const t of famTasks){
-    const tk=t.kind||'out', tp=t.profile||pf||'work';
-    res+='<div class="ft" data-p="'+t.priority+'">'+
-      '<div style="flex:1;min-width:0;padding-right:4px">'+
-        '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:bold" title="'+esc(t.text)+'">'+esc(t.text)+'</div>'+
-        '<small class="mut" style="display:block">'+(FS[t.status]||esc(t.status))+'</small>'+
-      '</div>'+
-      '<div style="display:flex;gap:6px;flex:none;align-items:center">'+
-        '<select data-fid="'+t.id+'" data-fld="kind" class="f-sel">'+
-          '<option value="out" '+(tk==='out'?'selected':'')+'>Вулична</option>'+
-          '<option value="in" '+(tk==='in'?'selected':'')+'>Хатня</option>'+
-        '</select>'+
-        '<select data-fid="'+t.id+'" data-fld="profile" class="f-sel" style="display:'+(tk==='in'?'none':'inline-block')+'">';
-    for(const [k,v] of Object.entries(PROFILES)){
-      res+='<option value="'+k+'" '+(tp===k?'selected':'')+'>'+v.n+'</option>';
-    }
-    res+='</select></div></div>';
-  }
-  return res;
+  if(m==='err')return h+`<p class="s0">Не вдалося завантажити: ${esc(famState.msg)}</p>`;
+  if(!famTasks.length)return h+`<p class="mut">Відкритих задач для «${esc(cfg.fperson)}» немає.</p>`;
+  return h+famTasks.map(t=>`<div class="ft" data-p="${t.priority}"><span>${esc(t.text)}</span><small class="mut">${FS[t.status]||esc(t.status)}</small></div>`).join('');
 }
 
 let dbState={mode:'local',msg:''};
@@ -486,7 +451,6 @@ $('#rf').onclick=async()=>{
   await init();
   b.disabled=false;b.textContent='Оновити';
 };
-
 $('#day').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.dn){const t=tasks.find(x=>x.id==b.dataset.dn);await dbSet(t.id,{done:!t.done})}
@@ -495,27 +459,11 @@ $('#day').onclick=async e=>{
   else return;
   render();
 };
-
-$('#day').onchange=async e=>{
-  const s=e.target;
-  if(s.dataset.fid){
-    const t=famTasks.find(x=>x.id==s.dataset.fid);
-    if(!t)return;
-    t[s.dataset.fld]=s.value;
-    if(s.dataset.fld==='kind') renderDay(); 
-    if(fsb){
-      const {error}=await fsb.from('family_tasks').update({[s.dataset.fld]:s.value}).eq('id',t.id);
-      if(error) note('Помилка оновлення родинної задачі: '+error.message);
-    }
-  }
-};
-
 $('#day').onsubmit=async e=>{
   e.preventDefault();const f=new FormData(e.target),kind=f.get('kind');
   await dbAdd({title:f.get('title').trim(),kind,profile:kind==='out'?f.get('profile'):null,date:sel,duration:Math.max(1,+f.get('duration')||1),done:false});
   render();
 };
-
 function renderProf(){
   const F=[['tmin','Температура від, °',1],['tmax','Температура до, °',1],['w','Вітер до, км/год',1],['p','Опади до, мм/год',0.1]];
   $('#pt').innerHTML='<tr><th></th><th>t° від</th><th>t° до</th><th>Вітер км/год</th><th>Опади мм/год</th></tr>'+
@@ -542,7 +490,7 @@ $('#fl').onclick=async()=>{
   if(error){fs.className='bad';fs.textContent='Не вдалося увійти: '+error.message;return}
   $('#fpass').value='';
   await famLoad();renderDay();
-  if(famState.mode==='ok'){fs.className='ok';fs.textContent='Увійшов. Відкритих задач для «'+cfg.fperson+'»: '+famTasks.length+'.';}
+  if(famState.mode==='ok'){fs.className='ok';fs.textContent=`Увійшов. Відкритих задач для «${cfg.fperson}»: ${famTasks.length}.`}
   else{fs.className='bad';fs.textContent='Увійшов, але задачі не завантажились: '+famState.msg}
 };
 $('#fo').onclick=async()=>{
@@ -551,7 +499,7 @@ $('#fo').onclick=async()=>{
   $('#fs').className='';$('#fs').textContent='Вийшов з родинної дошки.';
 };
 $('#sv').onclick=async()=>{
-  cfg={lat:+$('#lat').value\vert{}\vert{}48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim(),
+  cfg={lat:+$('#lat').value||48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim(),
     furl:$('#furl').value.trim(),fkey:$('#fkey').value.trim(),fperson:$('#fperson').value.trim()||'Олександр'};
   localStorage.wp_cfg=JSON.stringify(cfg);
   const ss=$('#ss');ss.className='';ss.textContent='Зберігаю і перевіряю підключення…';
@@ -559,10 +507,10 @@ $('#sv').onclick=async()=>{
   const loc=JSON.parse(localStorage.wp_tasks||'[]').length,m=dbState.mode;
   if(m==='sb'){
     ss.className='ok';
-    ss.textContent='Збережено. Supabase підключено, справ у базі: '+tasks.length+'.' + (loc?' У браузері лишилось '+loc+' локальних справ, у базу вони не перенесені.':'');
+    ss.textContent=`Збережено. Supabase підключено, справ у базі: ${tasks.length}.`+(loc?` У браузері лишилось ${loc} локальних справ, у базу вони не перенесені.`:'');
   }else if(m==='err'){
     ss.className='bad';
-    ss.textContent='Налаштування збережено, але база недоступна: '+dbState.msg+'. Працюю локально.';
+    ss.textContent=`Налаштування збережено, але база недоступна: ${dbState.msg}. Працюю локально.`;
   }else{
     ss.textContent='Збережено. URL або ключ Supabase не вказано, справи лишаються в цьому браузері.';
   }
