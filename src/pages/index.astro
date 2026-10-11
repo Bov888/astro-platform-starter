@@ -157,7 +157,7 @@ main{flex:1;min-height:0;display:grid;gap:14px;grid-template-columns:1fr}
 .sunt span{display:inline-flex;align-items:center;gap:5px}
 .sunt b{color:var(--fg);font-weight:600}
 .sunt .ic{color:var(--sun);font-size:15px}
-.strip{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;margin:8px 0 6px}
+.strip{display:grid;grid-template-columns:repeat(var(--n,12),minmax(0,1fr));gap:3px;margin:10px 0 8px}
 .h{display:flex;flex-direction:column;align-items:center;min-width:0;padding:4px 0 5px;font-size:12px;line-height:1.25;border-radius:8px;background:var(--soft);border-bottom:3px solid var(--line)}
 .h span{font-size:11px;color:var(--mut)}
 .h b{font-weight:600}
@@ -177,34 +177,51 @@ tr.off td{opacity:.45;text-decoration:line-through}
 #pt{border:0}
 
 /* справи */
-.tl{margin-top:14px}
-.sh{display:flex;align-items:center;gap:8px;margin:0 0 8px;font-size:15px;font-weight:600}
+.side{display:grid;gap:14px;min-height:0}
+.th2{display:flex;align-items:baseline;gap:10px;flex:none}
+.sh{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600}
+.dsm{font-size:13px;color:var(--mut)}
 .cnt{font-size:12px;font-weight:600;padding:1px 9px;border-radius:99px;background:var(--acc-soft);color:var(--acc)}
-.t,.ft{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;margin-bottom:8px;background:var(--soft);border:1px solid var(--line);border-radius:13px}
+.tl{margin-top:10px}
+.t,.ft{padding:9px 10px;margin-bottom:6px;background:var(--soft);border:1px solid var(--line);border-radius:12px}
+.t{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
 .t.dn{opacity:.6}.t.dn .tt{text-decoration:line-through}
-.tb{flex:1;min-width:0}
-.tt{display:block;font-weight:600;overflow-wrap:anywhere}
+.ck{width:26px;height:26px;min-height:0;margin-top:1px;padding:0;display:grid;place-items:center;border-radius:50%;border:2px solid var(--line);background:var(--card);color:transparent}
+.ck:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.t.dn .ck{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.ck svg,.x svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.x{width:30px;height:30px;min-height:0;padding:0;display:grid;place-items:center;border:0;background:transparent;color:var(--mut);border-radius:8px}
+.x svg{width:16px;height:16px;stroke-width:2}
+.x:hover:not(:disabled){color:var(--no);background:color-mix(in srgb,var(--no) 12%,transparent)}
+.tb{min-width:0;flex:1}
+.tt{display:block;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
 .tm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;font-size:13px}
 .tm select{min-height:32px;padding:3px 26px 3px 10px;font-size:13px;background-position:calc(100% - 14px) 54%,calc(100% - 9px) 54%}
-.ta{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;justify-content:flex-end;align-content:flex-start}
 .ti{display:flex;align-items:flex-start;gap:7px;margin-top:6px;font-size:13px}
 .dot{width:8px;height:8px;margin-top:.5em;border-radius:50%;background:var(--mut);flex:none}
 .ti.s2 .dot{background:var(--go)}.ti.s1 .dot{background:var(--maybe)}.ti.s0 .dot{background:var(--no)}
 .ti.in,.ti.n{color:var(--mut)}
 .alt{margin-top:4px;font-size:13px;color:var(--mut)}
 .alt .gh{min-height:28px;padding:2px 10px;margin-left:4px}
-.fh{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:15px;font-weight:600}
-.ft{border-left:4px solid var(--maybe)}
+.fh{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:15px;font-weight:600}
+.ft{display:flex;justify-content:space-between;gap:10px;border-left:4px solid var(--maybe)}
 .ft[data-p="1"]{border-left-color:var(--no)}.ft[data-p="3"]{border-left-color:var(--go)}
 .pill{flex:none;align-self:flex-start;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--mut);white-space:nowrap}
-#add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 68px auto;gap:8px;margin-top:12px;flex:none}
-#add input[name=title]{grid-column:1/-1}
+#add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 68px auto;gap:8px;margin-top:10px;flex:none}
+#add input[name=title]{grid-column:1/4}
+#add .pri{grid-column:4;grid-row:1/3;align-self:stretch;padding:0 18px}
+.srcs{margin-top:10px}
+.srcs>summary{display:flex;align-items:center;gap:8px;min-height:32px;cursor:pointer;font-size:13px;color:var(--mut)}
+.srcs>summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.srcs[open]>summary::before{transform:rotate(45deg)}
+.srcs .tw{margin-top:4px}
 
 @media (min-width:1000px){
   body{height:100dvh;overflow:hidden}
   main{grid-template-columns:minmax(0,1.5fr) minmax(390px,1fr)}
   #cal{flex:1;min-height:0;grid-auto-rows:1fr}
-  #day{overflow:hidden}
+  .side{grid-template-rows:auto minmax(0,1fr)}
+  .tk{overflow:hidden}
   .tl{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;margin-right:-6px;padding-right:6px}
 }
 @media (max-width:760px){
@@ -228,12 +245,12 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .sun,.hint{display:none}
   input,select{font-size:16px}
   .tm select{font-size:15px}
-  .strip{grid-template-columns:repeat(8,minmax(0,1fr))}
+  .strip{grid-template-columns:repeat(7,minmax(0,1fr))}
   .dt{font-size:20px}
   #add{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 64px}
-  #add .pri{grid-column:1/-1;min-height:42px}
-  .t,.ft{flex-direction:column}
-  .ta{justify-content:flex-start}
+  #add input[name=title]{grid-column:1/-1}
+  #add .pri{grid-column:1/-1;grid-row:auto;min-height:42px;padding:6px 12px}
+  .ft{flex-direction:column}
   .pill{align-self:flex-start}
   .two{grid-template-columns:1fr 1fr}
 }
@@ -315,7 +332,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
     </ul>
     <p class="hint">Назви джерел угорі клікабельні: натисни, щоб вимкнути джерело з розрахунків.</p>
   </section>
-  <section class="card" id="day" aria-label="Деталі дня"></section>
+  <div class="side" id="day"></div>
 </main>
 
 <script is:inline>
@@ -482,10 +499,12 @@ function renderCal(){
   $('#cal').innerHTML=h;
 }
 
+let srcOpen=false;
 function renderDay(){
   const keep=$('#add')?.elements.title.value||'';
+  const keepTop=$('#day .tl')?.scrollTop||0;
   const d=sel,s=SUN[d],P=PROFILES[pf];
-  let h=`<div class="dtop"><div class="dh"><h2 class="dt">${fmtDate(d)}</h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div>`;
+  let h=`<section class="card wx"><div class="dh"><h2 class="dt">${fmtDate(d)}</h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div>`;
   if(s){
     const L=s.ss-s.sr,tm=Math.round(L*60),pv=SUN[new Date(new Date(d+'T12:00').getTime()-864e5).toLocaleDateString('en-CA')];
     const dl=pv?Math.round((L-(pv.ss-pv.sr))*60):null;
@@ -495,35 +514,46 @@ function renderDay(){
   }
   if(H[d]){
     const nowH=d===today?local(new Date())[1]:-1;
-    h+=`<div class="strip" role="list">`+[...Array(24).keys()].map(x=>{
+    /* показуємо лише світлу частину доби з запасом в годину */
+    let a0=0,a1=23;
+    if(s){a0=Math.max(0,Math.floor(s.sr)-1);a1=Math.min(23,Math.ceil(s.ss))}
+    const hrs=[];for(let x=a0;x<=a1;x++)hrs.push(x);
+    const cols=hrs.length>14?Math.ceil(hrs.length/2):hrs.length;
+    h+=`<div class="strip" role="list" style="--n:${cols}">`+hrs.map(x=>{
       const st=hourSt(d,x,pf),o=H[d][x],a=o?act(o):[];
       const t=a.length?Math.round(med(a.map(v=>v.t)))+'°':'–';
       const nt=s&&(x+1<=s.sr||x>=s.ss);
       return `<div class="h s${st==null?'n':st}${nt?' nt':''}${x===nowH?' now':''}" role="listitem" title="${x}:00, ${t}"><span>${x}</span><b>${t}</b></div>`;
     }).join('')+`</div>`;
-    h+=`<p class="prof"><b>${P.n}</b>: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год, лише вдень</p>`;
-    h+=`<div class="tw"><table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
-      Object.entries(srcStats(d)).map(([k,v])=>`<tr${off.has(k)?' class="off"':''}><td>${k}</td><td>${Math.round(v.tmin)}…${Math.round(v.tmax)}°</td><td>${v.p.toFixed(1)} мм</td><td>${Math.round(v.w)} км/год</td></tr>`).join('')+`</table></div>`;
+    h+=`<p class="prof"><b>${P.n}</b>: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год</p>`;
+    h+=`<details class="srcs"${srcOpen?' open':''}><summary>Прогноз за джерелами</summary><div class="tw"><table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
+      Object.entries(srcStats(d)).map(([k,v])=>`<tr${off.has(k)?' class="off"':''}><td>${k}</td><td>${Math.round(v.tmin)}…${Math.round(v.tmax)}°</td><td>${v.p.toFixed(1)} мм</td><td>${Math.round(v.w)} км/год</td></tr>`).join('')+`</table></div></details>`;
   }else h+=`<p class="mut" style="margin-top:12px">Прогноз на цю дату ще недоступний.</p>`;
+  h+=`</section>`;
+
   const list=tasks.filter(t=>t.date===d);
-  h+=`</div><div class="tl"><h3 class="sh">Справи${list.length?`<span class="cnt">${list.length}</span>`:''}</h3>`;
+  const short=new Date(d+'T12:00').toLocaleDateString('uk-UA',{day:'numeric',month:'long'});
+  h+=`<section class="card tk"><div class="th2"><h3 class="sh">Справи${list.length?`<span class="cnt">${list.length}</span>`:''}</h3><span class="dsm">${short}</span></div><div class="tl">`;
   if(!list.length)h+=`<p class="mut" style="margin-bottom:8px">Справ поки немає. Додай першу нижче.</p>`;
   for(const t of list){
     const i=taskInfo(t);
-    h+=`<div class="t${t.done?' dn':''}"><div class="tb"><b class="tt">${esc(t.title)}</b>`+
+    h+=`<div class="t${t.done?' dn':''}">`+
+       `<button type="button" class="ck" data-dn="${t.id}" aria-label="${t.done?'Повернути в роботу':'Позначити виконаною'}" title="${t.done?'Повернути в роботу':'Позначити виконаною'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`+
+       `<div class="tb"><b class="tt">${esc(t.title)}</b>`+
        `<div class="tm"><select data-ek="${t.id}" aria-label="Вид">${kindOpts(t.kind)}</select>${t.kind==='out'?`<select data-ep="${t.id}" aria-label="Категорія">${profOpts(t.profile)}</select>`:''}<span class="mut">${t.duration} год</span></div>`+
        `<div class="ti ${i.c}"><i class="dot"></i><span>${i.txt}</span></div>`+
        (i.alt?`<div class="alt">Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button type="button" class="gh" data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button></div>`:(i.c==='s0'?'<div class="alt">У прогнозі вікон ще немає</div>':''))+
-       `</div><div class="ta"><button type="button" class="gh" data-dn="${t.id}">${t.done?'Повернути':'Готово'}</button><button type="button" class="gh dng" data-rm="${t.id}">Видалити</button></div></div>`;
+       `</div><button type="button" class="x" data-rm="${t.id}" aria-label="Видалити справу" title="Видалити"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
   }
   h+=famHtml();
   h+=`</div><form id="add"><input name="title" placeholder="Що зробити" aria-label="Назва справи" autocomplete="off" enterkeyhint="done" required>`+
      `<select name="kind" aria-label="Вид"><option value="out">Вулична</option><option value="in">Хатня</option></select>`+
      `<select name="profile" aria-label="Категорія">${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===pf?' selected':''}>${v.n}</option>`).join('')}</select>`+
      `<input name="duration" type="number" min="1" max="12" value="1" inputmode="numeric" aria-label="Тривалість, год">`+
-     `<button class="pri">Додати</button></form>`;
+     `<button class="pri">Додати</button></form></section>`;
   $('#day').innerHTML=h;
   if(keep)$('#add').elements.title.value=keep;
+  if(keepTop)$('#day .tl').scrollTop=keepTop;
 }
 function renderSrc(){
   const have=avail();
@@ -656,6 +686,7 @@ $('#day').onclick=async e=>{
   else return;
   render();
 };
+$('#day').addEventListener('toggle',e=>{if(e.target.classList&&e.target.classList.contains('srcs'))srcOpen=e.target.open},true);
 $('#day').onchange=async e=>{
   const s=e.target;
   if(s.dataset.fk||s.dataset.fp){
