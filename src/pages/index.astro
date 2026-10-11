@@ -1,10 +1,5 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Погодний планувальник</title>
-<!--
+---
+/*
 SQL для Supabase (виконати один раз у SQL Editor):
 
 create table wp_tasks(
@@ -20,12 +15,20 @@ create table wp_tasks(
 alter table wp_tasks enable row level security;
 create policy "anon all" on wp_tasks for all using (true) with check (true);
 notify pgrst, 'reload schema';
--->
-<script>
+*/
+---
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Погодний планувальник</title>
+
+<script is:inline>
 (function(){var t=localStorage.wp_theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t})();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<style>
+<script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style is:global>
 :root{color-scheme:light;--bg:#eef3f1;--card:#ffffff;--line:#d8e3de;--fg:#1f2d29;--mut:#64766f;--go:#38a67c;--maybe:#d99a1e;--no:#d9644a;--acc:#14805a;--on:#ffffff;--sel:#e1f3ea}
 :root[data-theme=dark]{color-scheme:dark;--bg:#151d1b;--card:#1e2926;--line:#2f3f3a;--fg:#e4ece9;--mut:#8fa49d;--go:#5cc9a0;--maybe:#e8bf5a;--no:#ea7c63;--acc:#7fe3bd;--on:#0e2a20;--sel:#23403a}
 *{box-sizing:border-box}
@@ -142,7 +145,7 @@ form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:
   <section class="card" id="day"></section>
 </main>
 
-<script>
+<script is:inline>
 const $=s=>document.querySelector(s);
 const PROFILES={
   run:{n:'Біг',tmin:3,tmax:24,w:25,p:0.1},
