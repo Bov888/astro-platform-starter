@@ -1,19 +1,428 @@
----
-import Layout from '../layouts/Layout.astro';
-import Markdown from '../components/Markdown.astro';
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Погодний планувальник</title>
+<!--
+SQL для Supabase (виконати один раз у SQL Editor):
 
-const explainer = `
-An Astro website can go way beyond static pages - on the right platform.
+create table wp_tasks(
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  kind text not null default 'out',
+  profile text,
+  date date not null,
+  duration int not null default 1,
+  done boolean not null default false,
+  created_at timestamptz default now()
+);
+alter table wp_tasks enable row level security;
+create policy "anon all" on wp_tasks for all using (true) with check (true);
+notify pgrst, 'reload schema';
+-->
+<script>
+(function(){var t=localStorage.wp_theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{color-scheme:light;--bg:#eef3f1;--card:#ffffff;--line:#d8e3de;--fg:#1f2d29;--mut:#64766f;--go:#38a67c;--maybe:#d99a1e;--no:#d9644a;--acc:#14805a;--on:#ffffff;--sel:#e1f3ea}
+:root[data-theme=dark]{color-scheme:dark;--bg:#151d1b;--card:#1e2926;--line:#2f3f3a;--fg:#e4ece9;--mut:#8fa49d;--go:#5cc9a0;--maybe:#e8bf5a;--no:#ea7c63;--acc:#7fe3bd;--on:#0e2a20;--sel:#23403a}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;padding:10px;height:100dvh;overflow:hidden;display:flex;flex-direction:column;gap:10px;background:var(--bg);color:var(--fg);font:clamp(13px,1.7vh,16px)/1.4 "Trebuchet MS",system-ui,sans-serif}
+h1{font-size:1.3em;margin:0;color:var(--acc)}
+h3{margin:0 0 4px;font-size:1.25em;text-transform:capitalize}
+button,select,input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
+button{cursor:pointer}button:hover{border-color:var(--acc)}
+.pri{background:var(--acc);border-color:var(--acc);color:var(--on);font-weight:700}
+.pri:hover{filter:brightness(1.08)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:none}
+#src{display:flex;gap:6px}
+.chip{font-size:.8em;padding:1px 9px;border-radius:99px;border:1px solid var(--line);background:var(--card)}
+.chip.ok{border-color:var(--go);color:var(--go);background:color-mix(in srgb,var(--go) 12%,var(--card))}
+.chip.bad{border-color:var(--no);color:var(--no);cursor:default}
+.chip.off{border-style:dashed;color:var(--mut);text-decoration:line-through}
+#note{color:var(--no);font-size:.9em}
+.right{margin-left:auto;display:flex;gap:8px;align-items:center}
+details{position:relative}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+.ib{width:34px;height:34px;padding:0;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg)}
+.ib:hover,details[open]>.ib{border-color:var(--acc);color:var(--acc)}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+details>div{position:absolute;right:0;top:100%;z-index:5;display:grid;gap:6px;width:380px;max-width:92vw;max-height:calc(100dvh - 70px);overflow:auto;margin-top:6px;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(20,40,30,.18)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px}
+.card{display:flex;flex-direction:column;min-height:0;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.mut{color:var(--mut);margin:2px 0}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:1.15em;flex:none}
+.dws{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:none;margin-bottom:4px}
+.dw{text-align:center;color:var(--mut);font-size:.85em;font-style:normal}
+#cal{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:1fr;gap:6px}
+.c{position:relative;min-height:0;padding:6px 8px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;background:var(--bg);border:2px solid var(--line);border-radius:12px;color:var(--fg)}
+.c b{font-size:clamp(15px,2.8vh,24px)}
+.c small{color:var(--mut);font-size:clamp(12px,1.9vh,16px)}
+.c em{position:absolute;top:6px;right:8px;font-style:normal;font-size:.9em;color:var(--acc);font-weight:700}
+.c.s2{border-color:var(--go);background:color-mix(in srgb,var(--go) 14%,var(--card))}
+.c.s1{border-color:var(--maybe);background:color-mix(in srgb,var(--maybe) 14%,var(--card))}
+.c.s0{border-color:color-mix(in srgb,var(--no) 55%,var(--line));background:color-mix(in srgb,var(--no) 8%,var(--card))}
+.c.sn{opacity:.55}
+.c.sel{box-shadow:0 0 0 3px var(--acc)}
+.c.td b{color:var(--acc);text-decoration:underline}
+.bt{display:flex;flex-direction:column}
+.c .sun{font-size:clamp(10px,1.5vh,13px)}
+.sunbar{position:relative;height:8px;margin:8px 0 4px;border-radius:99px;background:color-mix(in srgb,var(--fg) 14%,var(--card))}
+.sunbar i{position:absolute;top:0;bottom:0;border-radius:99px;background:var(--maybe)}
+.sunbar u{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;border-radius:2px;background:var(--acc)}
+.sunt{display:flex;justify-content:space-between;gap:6px;font-size:.9em;color:var(--mut)}
+.legend{flex:none;margin:8px 0 0;font-size:.85em;color:var(--mut)}
+#day{overflow:hidden}
+.dtop{flex:none}
+.strip{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin:6px 0}
+.h{font-size:.8em;text-align:center;padding:2px 0;border-radius:6px;background:var(--bg);border-bottom:4px solid var(--line)}
+.h span{display:block;color:var(--mut)}
+.h.s2{border-color:var(--go);background:color-mix(in srgb,var(--go) 14%,var(--card))}
+.h.s1{border-color:var(--maybe);background:color-mix(in srgb,var(--maybe) 14%,var(--card))}
+.h.s0{border-color:color-mix(in srgb,var(--no) 55%,var(--line))}
+table{border-collapse:collapse;width:100%;font-size:.88em}
+td,th{padding:2px 6px;border-bottom:1px solid var(--line);text-align:left;font-weight:400}th{color:var(--mut)}
+tr.off td{opacity:.45;text-decoration:line-through}
+#pt th{font-size:.8em;line-height:1.2}
+#pt td,#pt th{padding:2px 3px}
+#pt input{width:100%;min-width:0;padding:2px 4px;text-align:center}
+.tl{flex:1;min-height:0;overflow-y:auto;margin-top:8px;padding-right:2px}
+.t{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.t.dn b{text-decoration:line-through;opacity:.6}
+.t button{padding:2px 8px}
+.t .s2{color:var(--go)}.t .s1{color:var(--maybe)}.t .s0{color:var(--no)}.in,.n{color:var(--mut)}
+form{display:flex;flex-wrap:wrap;gap:6px;flex:none;margin-top:8px}
+form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:56px}
+@media(max-width:820px){
+  body{height:auto;overflow:auto}
+  main{grid-template-columns:1fr}
+  #cal{grid-auto-rows:64px}
+  .c .sun{display:none}
+  #day{overflow:visible}.tl{overflow:visible}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Погодний планувальник</h1>
+  <select id="pf" aria-label="Профіль активності"></select>
+  <span id="src"></span>
+  <button id="rf" title="Оновити прогноз">Оновити</button>
+  <span id="note"></span>
+  <div class="right">
+    <button id="th" class="ib"></button>
+    <details>
+      <summary class="ib" title="Налаштування" aria-label="Налаштування"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></summary>
+      <div>
+        <b>Пороги активностей</b>
+        <table id="pt"></table>
+        <button id="rs">Скинути пороги</button>
+        <b>Місце і база</b>
+        <label>Широта <input id="lat"></label>
+        <label>Довгота <input id="lon"></label>
+        <label>Supabase URL <input id="url" placeholder="https://xxx.supabase.co"></label>
+        <label>Supabase anon key <input id="key"></label>
+        <button id="sv" class="pri">Зберегти</button>
+      </div>
+    </details>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <div class="nav"><button id="pm" aria-label="Попередній місяць">‹</button><b id="mt"></b><button id="nm" aria-label="Наступний місяць">›</button></div>
+    <div class="dws" id="dws"></div>
+    <div id="cal"></div>
+    <p class="legend">Зелена рамка: є вікно на 2 години, джерела згодні. Жовта: джерела розходяться. Червона: вікон немає. Сіра: прогнозу ще немає. Натисни на назву джерела вгорі, щоб увімкнути або вимкнути його в розрахунках.</p>
+  </section>
+  <section class="card" id="day"></section>
+</main>
 
-Netlify supports not only [Streaming SSR](https://docs.astro.build/en/guides/server-side-rendering/#html-streaming) and fast [Edge Middleware](https://docs.astro.build/en/guides/middleware/), but also [on-demand revalidation](https://www.netlify.com/blog/cache-tags-and-purge-api-on-netlify/) and [stale-while-revalidate](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/). 
-Any page or data can be rebuilt only when needed, without site visitors ever getting a performance hit.
-`;
----
+<script>
+const $=s=>document.querySelector(s);
+const PROFILES={
+  run:{n:'Біг',tmin:3,tmax:24,w:25,p:0.1},
+  bike:{n:'Велосипед',tmin:8,tmax:30,w:20,p:0.1},
+  walk:{n:'Прогулянка',tmin:-5,tmax:30,w:35,p:0.3},
+  work:{n:'Вуличні роботи',tmin:2,tmax:32,w:40,p:0.2}
+};
+const DEF=JSON.parse(JSON.stringify(PROFILES));
+(()=>{try{const o=JSON.parse(localStorage.wp_prof||'{}');for(const k in o)if(PROFILES[k])Object.assign(PROFILES[k],o[k])}catch(e){}})();
+const saveProf=()=>localStorage.wp_prof=JSON.stringify(Object.fromEntries(Object.entries(PROFILES).map(([k,v])=>[k,{tmin:v.tmin,tmax:v.tmax,w:v.w,p:v.p}])));
+const SOURCES=['OM-ECMWF','OM-GFS','OM-ICON','MET.no'];
+const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
+const MON=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
+let cfg=Object.assign({lat:48.53,lon:25.04,url:'',key:''},JSON.parse(localStorage.wp_cfg||'{}'));
+let H={},SUN={},TZ='Europe/Kyiv',tasks=[],sb=null,pf='run',cur=new Date(),FMT=null;
+let today=new Date().toLocaleDateString('en-CA'),sel=today;
+let off=new Set(JSON.parse(localStorage.wp_off||'[]'));
 
-<Layout title="bye">
-    <h1 class="mb-10">Netlify Platform Starter for Astro</h1>
-    <Markdown content={explainer} class="mb-10 text-lg" />
-    <p>
-        <a href="https://docs.netlify.com/frameworks/astro/" class="btn btn-lg sm:min-w-64">Read the Docs</a>
-    </p>
-</Layout>
+const pad=n=>String(n).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const med=a=>{a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null};
+const hm=s=>{const [h,m]=s.slice(11,16).split(':');return +h+m/60};
+const fh=x=>{const m=Math.round(x*60);return pad(Math.floor(m/60)%24)+':'+pad(m%60)};
+const rng=r=>r.map(([a,b])=>fh(a)+'–'+fh(b)).join(', ');
+const fmtDate=d=>new Date(d+'T12:00').toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'});
+const note=m=>{$('#note').textContent=m||''};
+/* значення лише з увімкнених джерел */
+const act=o=>Object.entries(o).filter(([k])=>!off.has(k)).map(([,v])=>v);
+function avail(){
+  const s=new Set();
+  Object.values(H).forEach(d=>Object.values(d).forEach(o=>Object.keys(o).forEach(k=>s.add(k))));
+  return s;
+}
+
+function setTheme(t){
+  document.documentElement.dataset.theme=t;localStorage.wp_theme=t;
+  const sun='<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+  const moon='<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  const label=t==='dark'?'Світла тема':'Темна тема';
+  $('#th').innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${t==='dark'?sun:moon}</svg>`;
+  $('#th').title=label;$('#th').setAttribute('aria-label',label);
+}
+
+function local(dt){
+  FMT=FMT||new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'});
+  const p=Object.fromEntries(FMT.formatToParts(dt).map(x=>[x.type,x.value]));
+  return [`${p.year}-${p.month}-${p.day}`,+p.hour];
+}
+function put(d,h,src,t,p,w){((H[d]??={})[h]??={})[src]={t,p:p||0,w:w||0}}
+
+async function loadWeather(){
+  H={};SUN={};FMT=null;note('');
+  const {lat,lon}=cfg;
+  try{
+    const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset&timezone=auto&past_days=1&forecast_days=10`)).json();
+    TZ=j.timezone;today=local(new Date())[0];
+    j.daily.time.forEach((d,i)=>SUN[d]={sr:hm(j.daily.sunrise[i]),ss:hm(j.daily.sunset[i])});
+  }catch(e){note('Не вдалося отримати схід і захід сонця.')}
+  const models=['ecmwf_ifs025','gfs_seamless','icon_seamless'];
+  try{
+    const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation,wind_speed_10m&models=${models.join(',')}&timezone=auto&forecast_days=10`)).json();
+    j.hourly.time.forEach((t,i)=>models.forEach(m=>{
+      const T=j.hourly['temperature_2m_'+m]?.[i];if(T==null)return;
+      put(t.slice(0,10),+t.slice(11,13),'OM-'+m.split('_')[0].toUpperCase(),T,j.hourly['precipitation_'+m][i],j.hourly['wind_speed_10m_'+m][i]);
+    }));
+  }catch(e){}
+  try{
+    const j=await (await fetch(`https://api.met.no/weatherdata/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`)).json();
+    for(const e of j.properties.timeseries){
+      const d=e.data,i=d.instant.details,one=d.next_1_hours,six=d.next_6_hours;
+      const span=one?1:(six?6:1),pr=one?one.details.precipitation_amount:(six?six.details.precipitation_amount/6:0);
+      for(let k=0;k<span;k++){
+        const [dd,hh]=local(new Date(new Date(e.time).getTime()+k*3600e3));
+        put(dd,hh,'MET.no',i.air_temperature,pr,i.wind_speed*3.6);
+      }
+    }
+  }catch(e){}
+}
+
+/* 2 — усі джерела згодні, 1 — розходяться, 0 — не підходить, null — немає даних */
+function hourSt(d,h,pf){
+  const P=PROFILES[pf],s=SUN[d],o=H[d]?.[h];if(!o)return null;
+  const v=act(o),n=v.length;if(!n)return null;
+  if(s&&(h+1<=s.sr||h>=s.ss))return 0;
+  const ok=v.filter(x=>x.t>=P.tmin&&x.t<=P.tmax&&x.w<=P.w&&x.p<=P.p).length;
+  return ok===n?2:(ok>0&&ok>=n/2)?1:0;
+}
+function win(d,pf,dur){
+  const w=[];
+  for(let h=0;h+dur<=24;h++){
+    let m=2;
+    for(let k=0;k<dur;k++){const s=hourSt(d,h+k,pf);if(s==null){m=null;break}m=Math.min(m,s)}
+    if(m!=null)w.push([h,m]);
+  }
+  if(!w.length)return{st:null,r:[]};
+  const top=Math.max(...w.map(x=>x[1]));
+  if(!top)return{st:0,r:[]};
+  const r=[];
+  w.filter(x=>x[1]===top).forEach(([h])=>{
+    const L=r[r.length-1];
+    if(L&&L[2]===h-1){L[1]=h+dur;L[2]=h}else r.push([h,h+dur,h]);
+  });
+  return{st:top,r:r.map(x=>[x[0],x[1]])};
+}
+function dayInfo(d){
+  if(!H[d])return null;
+  let tmax=-99,rain=0;
+  for(let h=6;h<22;h++){
+    const o=H[d][h];if(!o)continue;const v=act(o);if(!v.length)continue;
+    tmax=Math.max(tmax,med(v.map(x=>x.t)));rain+=med(v.map(x=>x.p));
+  }
+  return tmax===-99?null:{tmax,rain};
+}
+function srcStats(d){
+  const r={};
+  for(const h in H[d])for(const [k,v] of Object.entries(H[d][h])){
+    const s=r[k]??={tmin:99,tmax:-99,p:0,w:0};
+    s.tmin=Math.min(s.tmin,v.t);s.tmax=Math.max(s.tmax,v.t);s.p+=v.p;s.w=Math.max(s.w,v.w);
+  }
+  return r;
+}
+
+function nextOk(t){
+  for(const d of Object.keys(H).sort()){
+    if(d<=t.date||d<today)continue;
+    const w=win(d,t.profile,t.duration);
+    if(w.st>0)return{d,w};
+  }
+  return null;
+}
+function taskInfo(t){
+  if(t.kind==='in')return{c:'in',txt:'хатня справа, від погоди не залежить'};
+  const w=win(t.date,t.profile,t.duration);
+  if(w.st==null)return{c:'n',txt:'на цю дату прогнозу ще немає'};
+  if(w.st>0)return{c:'s'+w.st,txt:(w.st==2?'підходить: ':'джерела розходяться, можливі вікна: ')+rng(w.r)};
+  return{c:'s0',txt:'вікон немає',alt:nextOk(t)};
+}
+
+function renderCal(){
+  const y=cur.getFullYear(),m=cur.getMonth();
+  $('#mt').textContent=MON[m]+' '+y;
+  $('#dws').innerHTML=DOW.map(d=>`<i class="dw">${d}</i>`).join('');
+  let h='';
+  const first=(new Date(y,m,1).getDay()+6)%7,nd=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++)h+='<i></i>';
+  for(let d=1;d<=nd;d++){
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`,w=win(ds,pf,2),inf=dayInfo(ds);
+    const nt=tasks.filter(t=>t.date===ds&&!t.done).length;
+    h+=`<button class="c s${w.st==null?'n':w.st}${ds===sel?' sel':''}${ds===today?' td':''}" data-d="${ds}"><b>${d}</b>`+
+       `<div class="bt">`+(inf?`<small>${Math.round(inf.tmax)}°${inf.rain>=0.5?' дощ':''}</small>`:'<small>&nbsp;</small>')+
+       (SUN[ds]?`<small class="sun">↑${fh(SUN[ds].sr)} ↓${fh(SUN[ds].ss)}</small>`:'')+`</div>`+
+       (nt?`<em>${nt}</em>`:'')+`</button>`;
+  }
+  $('#cal').innerHTML=h;
+}
+
+function renderDay(){
+  const d=sel,s=SUN[d],P=PROFILES[pf];
+  let h=`<div class="dtop"><h3>${fmtDate(d)}</h3>`;
+  if(s){
+    const L=s.ss-s.sr,tm=Math.round(L*60),pv=SUN[new Date(new Date(d+'T12:00').getTime()-864e5).toLocaleDateString('en-CA')];
+    const dl=pv?Math.round((L-(pv.ss-pv.sr))*60):null;
+    const now=d===today?(local(new Date())[1]+new Date().getMinutes()/60)/24*100:null;
+    h+=`<div class="sunbar" title="Світловий день на шкалі 0–24 год"><i style="left:${s.sr/24*100}%;width:${L/24*100}%"></i>${now!=null?`<u style="left:${now}%"></u>`:''}</div>`+
+       `<div class="sunt"><span>↑ схід ${fh(s.sr)}</span><span>${Math.floor(tm/60)} год ${tm%60} хв${dl==null||dl===0?'':`, ${dl>0?'+':'−'}${Math.abs(dl)} хв до вчора`}</span><span>захід ${fh(s.ss)} ↓</span></div>`;
+  }
+  if(H[d]){
+    h+=`<div class="strip">`+[...Array(24).keys()].map(x=>{
+      const st=hourSt(d,x,pf),o=H[d][x],a=o?act(o):[];
+      const t=a.length?Math.round(med(a.map(v=>v.t))):'';
+      return `<div class="h s${st==null?'n':st}"><span>${x}</span>${t}°</div>`;
+    }).join('')+`</div>`;
+    h+=`<p class="mut">«${P.n}»: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год, лише вдень.</p>`;
+    h+=`<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
+      Object.entries(srcStats(d)).map(([k,v])=>`<tr${off.has(k)?' class="off"':''}><td>${k}</td><td>${Math.round(v.tmin)}…${Math.round(v.tmax)}°</td><td>${v.p.toFixed(1)} мм</td><td>${Math.round(v.w)} км/год</td></tr>`).join('')+`</table>`;
+  }else h+=`<p class="mut">Прогноз на цю дату ще недоступний.</p>`;
+  h+=`</div><div class="tl"><h3 style="text-transform:none">Справи</h3>`;
+  const list=tasks.filter(t=>t.date===d);
+  if(!list.length)h+=`<p class="mut">Справ поки немає. Додай першу нижче.</p>`;
+  for(const t of list){
+    const i=taskInfo(t);
+    h+=`<div class="t${t.done?' dn':''}"><div><b>${esc(t.title)}</b> <span class="mut">${t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична'}, ${t.duration} год</span>`+
+       `<div class="${i.c}">${i.txt}`+
+       (i.alt?`<br>Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button>`:(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
+       `</div></div><div><button data-dn="${t.id}" aria-label="Готово">Готово</button> <button data-rm="${t.id}" aria-label="Видалити">Видалити</button></div></div>`;
+  }
+  h+=`</div><form id="add"><input name="title" placeholder="Що зробити" required>`+
+     `<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>`+
+     `<select name="profile">${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===pf?' selected':''}>${v.n}</option>`).join('')}</select>`+
+     `<input name="duration" type="number" min="1" max="12" value="1" aria-label="Тривалість, год">`+
+     `<button class="pri">Додати</button></form>`;
+  $('#day').innerHTML=h;
+}
+function renderSrc(){
+  const have=avail();
+  $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${!have.has(k)?'Джерело недоступне':off.has(k)?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути'}">${k}</button>`).join('');
+}
+function render(){renderSrc();renderCal();renderDay()}
+
+/* зберігання: Supabase або localStorage як запасний варіант */
+async function dbLoad(){
+  if(sb){
+    const r=await sb.from('wp_tasks').select('*').order('date');
+    if(!r.error){tasks=r.data;return}
+    note('Supabase: '+r.error.message+'. Працюю локально.');sb=null;
+  }
+  tasks=JSON.parse(localStorage.wp_tasks||'[]');
+}
+const lsSave=()=>{if(!sb)localStorage.wp_tasks=JSON.stringify(tasks)};
+async function dbAdd(t){
+  if(sb){const r=await sb.from('wp_tasks').insert(t).select().single();if(r.error)return note(r.error.message);tasks.push(r.data)}
+  else{t.id=Date.now();tasks.push(t);lsSave()}
+}
+async function dbSet(id,p){
+  const t=tasks.find(x=>x.id==id);Object.assign(t,p);
+  if(sb){const r=await sb.from('wp_tasks').update(p).eq('id',id);if(r.error)note(r.error.message)}else lsSave();
+}
+async function dbDel(id){
+  tasks=tasks.filter(x=>x.id!=id);
+  if(sb){const r=await sb.from('wp_tasks').delete().eq('id',id);if(r.error)note(r.error.message)}else lsSave();
+}
+
+$('#pf').innerHTML=Object.entries(PROFILES).map(([k,v])=>`<option value="${k}">${v.n}</option>`).join('');
+$('#pf').onchange=e=>{pf=e.target.value;render()};
+$('#th').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+$('#src').onclick=e=>{
+  const b=e.target.closest('[data-s]');if(!b)return;
+  const k=b.dataset.s,have=avail();if(!have.has(k))return;
+  if(off.has(k))off.delete(k);
+  else{
+    if(![...have].some(x=>x!==k&&!off.has(x))){note('Має лишитись хоча б одне джерело.');return}
+    off.add(k);
+  }
+  note('');localStorage.wp_off=JSON.stringify([...off]);render();
+};
+$('#pm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);renderCal()};
+$('#nm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);renderCal()};
+$('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){sel=b.dataset.d;render()}};
+$('#rf').onclick=()=>init();
+$('#day').onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.dn){const t=tasks.find(x=>x.id==b.dataset.dn);await dbSet(t.id,{done:!t.done})}
+  else if(b.dataset.rm)await dbDel(b.dataset.rm);
+  else if(b.dataset.mv){await dbSet(b.dataset.mv,{date:b.dataset.to});sel=b.dataset.to}
+  else return;
+  render();
+};
+$('#day').onsubmit=async e=>{
+  e.preventDefault();const f=new FormData(e.target),kind=f.get('kind');
+  await dbAdd({title:f.get('title').trim(),kind,profile:kind==='out'?f.get('profile'):null,date:sel,duration:Math.max(1,+f.get('duration')||1),done:false});
+  render();
+};
+function renderProf(){
+  const F=[['tmin','Температура від, °',1],['tmax','Температура до, °',1],['w','Вітер до, км/год',1],['p','Опади до, мм/год',0.1]];
+  $('#pt').innerHTML='<tr><th></th><th>t° від</th><th>t° до</th><th>Вітер км/год</th><th>Опади мм/год</th></tr>'+
+    Object.entries(PROFILES).map(([k,v])=>`<tr><td>${v.n}</td>`+F.map(([f,l,st])=>`<td><input type="number" step="${st}" data-k="${k}" data-f="${f}" value="${v[f]}" aria-label="${v.n}: ${l}"></td>`).join('')+'</tr>').join('');
+}
+$('#pt').oninput=e=>{
+  const i=e.target;if(!i.dataset.k)return;
+  const n=parseFloat(i.value);if(!isFinite(n))return;
+  PROFILES[i.dataset.k][i.dataset.f]=n;saveProf();renderCal();renderDay();
+};
+$('#rs').onclick=()=>{
+  for(const k in DEF)Object.assign(PROFILES[k],DEF[k]);
+  localStorage.removeItem('wp_prof');renderProf();render();
+};
+renderProf();
+['lat','lon','url','key'].forEach(k=>$('#'+k).value=cfg[k]);
+$('#sv').onclick=()=>{
+  cfg={lat:+$('#lat').value||48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim()};
+  localStorage.wp_cfg=JSON.stringify(cfg);init();
+};
+
+async function init(){
+  sb=(cfg.url&&cfg.key&&window.supabase)?supabase.createClient(cfg.url,cfg.key):null;
+  await Promise.all([loadWeather(),dbLoad()]);
+  render();
+}
+setTheme(document.documentElement.dataset.theme);
+render();init();
+</script>
+</body>
+</html>
