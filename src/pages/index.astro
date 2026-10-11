@@ -48,7 +48,10 @@ header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:none}
 .chip.bad{border-color:var(--no);color:var(--no);cursor:default}
 .chip.off{border-style:dashed;color:var(--mut);text-decoration:line-through}
 #note{color:var(--no);font-size:.9em}
-#ss{font-size:.9em;color:var(--mut)}#ss.ok{color:var(--go)}#ss.bad{color:var(--no)}
+#ss,#fs{font-size:.9em;color:var(--mut)}#ss.ok,#fs.ok{color:var(--go)}#ss.bad,#fs.bad{color:var(--no)}
+.fh{margin-top:14px;text-transform:none}
+.ft{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:5px 8px;margin-top:4px;border-left:4px solid var(--maybe);border-radius:6px;background:var(--bg)}
+.ft[data-p="1"]{border-left-color:var(--no)}.ft[data-p="3"]{border-left-color:var(--go)}
 .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 details{position:relative}
 summary{cursor:pointer;list-style:none}
@@ -118,6 +121,7 @@ form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:
   <span id="src"></span>
   <span id="db" class="chip"></span>
   <button id="rf" title="Оновити прогноз">Оновити</button>
+  <span id="upd" class="mut"></span>
   <span id="note"></span>
   <div class="right">
     <button id="th" class="ib"></button>
@@ -132,8 +136,17 @@ form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:
         <label>Довгота <input id="lon"></label>
         <label>Supabase URL <input id="url" placeholder="https://xxx.supabase.co"></label>
         <label>Supabase anon key <input id="key"></label>
+        <b>Родинна дошка (лише перегляд моїх задач)</b>
+        <label>URL проєкту дошки <input id="furl" placeholder="https://xxx.supabase.co"></label>
+        <label>Ключ дошки (publishable або anon) <input id="fkey"></label>
+        <label>Моє ім'я в дошці <input id="fperson"></label>
         <button id="sv" class="pri">Зберегти</button>
         <div id="ss" role="status"></div>
+        <b>Вхід у родинну дошку</b>
+        <label>Email <input id="femail" type="email" autocomplete="username"></label>
+        <label>Пароль <input id="fpass" type="password" autocomplete="current-password"></label>
+        <div><button id="fl" class="pri">Увійти</button> <button id="fo">Вийти</button></div>
+        <div id="fs" role="status"></div>
       </div>
     </details>
   </div>
@@ -162,7 +175,7 @@ const saveProf=()=>localStorage.wp_prof=JSON.stringify(Object.fromEntries(Object
 const SOURCES=['OM-ECMWF','OM-GFS','OM-ICON','MET.no'];
 const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
 const MON=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
-let cfg=Object.assign({lat:48.53,lon:25.04,url:'',key:''},JSON.parse(localStorage.wp_cfg||'{}'));
+let cfg=Object.assign({lat:48.53,lon:25.04,url:'',key:'',furl:'',fkey:'',fperson:'Олександр'},JSON.parse(localStorage.wp_cfg||'{}'));
 let H={},SUN={},TZ='Europe/Kyiv',tasks=[],sb=null,pf='run',cur=new Date(),FMT=null;
 let today=new Date().toLocaleDateString('en-CA'),sel=today;
 let off=new Set(JSON.parse(localStorage.wp_off||'[]'));
@@ -335,6 +348,7 @@ function renderDay(){
        (i.alt?`<br>Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button>`:(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
        `</div></div><div><button data-dn="${t.id}" aria-label="Готово">Готово</button> <button data-rm="${t.id}" aria-label="Видалити">Видалити</button></div></div>`;
   }
+  h+=famHtml();
   h+=`</div><form id="add"><input name="title" placeholder="Що зробити" required>`+
      `<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>`+
      `<select name="profile">${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===pf?' selected':''}>${v.n}</option>`).join('')}</select>`+
@@ -349,6 +363,39 @@ function renderSrc(){
 function render(){renderSrc();renderDb();renderCal();renderDay()}
 
 /* зберігання: Supabase або localStorage як запасний варіант */
+/* родинна дошка: окремий клієнт Supabase, лише читання */
+let fsb=null,fsbId='',famTasks=[],famState={mode:'off',msg:''};
+const FS={todo:'До виконання',doing:'В роботі'};
+async function famLoad(){
+  famTasks=[];
+  if(!(cfg.furl&&cfg.fkey)){fsb=null;fsbId='';famState={mode:'off',msg:''};return}
+  if(!window.supabase){famState={mode:'err',msg:'бібліотека Supabase не завантажилась'};return}
+  const id=cfg.furl+'|'+cfg.fkey;
+  if(id!==fsbId){fsb=supabase.createClient(cfg.furl,cfg.fkey,{auth:{storageKey:'wp-family-auth'}});fsbId=id}
+  try{
+    const {data:{session}}=await fsb.auth.getSession();
+    if(!session){famState={mode:'login',msg:''};return}
+    const r=await fsb.from('family_tasks').select('*').eq('person',cfg.fperson).neq('status','done').order('priority').order('id');
+    if(r.error){famState={mode:'err',msg:r.error.message};return}
+    famTasks=r.data;famState={mode:'ok',msg:''};
+  }catch(e){famState={mode:'err',msg:String(e.message||e)}}
+}
+function famInfo(){
+  const m=famState.mode;
+  if(m==='login')return ' Родинна дошка: виконай вхід нижче.';
+  if(m==='ok')return ` Родинна дошка: задач для «${cfg.fperson}»: ${famTasks.length}.`;
+  if(m==='err')return ` Родинна дошка: помилка (${famState.msg}).`;
+  return '';
+}
+function famHtml(){
+  const m=famState.mode;if(m==='off')return '';
+  const h=`<h3 class="fh">З родинної дошки (лише перегляд)</h3>`;
+  if(m==='login')return h+'<p class="mut">Щоб бачити задачі, увійди в налаштуваннях (шестірня, розділ «Вхід у родинну дошку»).</p>';
+  if(m==='err')return h+`<p class="s0">Не вдалося завантажити: ${esc(famState.msg)}</p>`;
+  if(!famTasks.length)return h+`<p class="mut">Відкритих задач для «${esc(cfg.fperson)}» немає.</p>`;
+  return h+famTasks.map(t=>`<div class="ft" data-p="${t.priority}"><span>${esc(t.text)}</span><small class="mut">${FS[t.status]||esc(t.status)}</small></div>`).join('');
+}
+
 let dbState={mode:'local',msg:''};
 async function dbLoad(){
   dbState={mode:'local',msg:''};
@@ -399,7 +446,11 @@ $('#src').onclick=e=>{
 $('#pm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);renderCal()};
 $('#nm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);renderCal()};
 $('#cal').onclick=e=>{const b=e.target.closest('[data-d]');if(b){sel=b.dataset.d;render()}};
-$('#rf').onclick=()=>init();
+$('#rf').onclick=async()=>{
+  const b=$('#rf');b.disabled=true;b.textContent='Оновлюю…';
+  await init();
+  b.disabled=false;b.textContent='Оновити';
+};
 $('#day').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.dn){const t=tasks.find(x=>x.id==b.dataset.dn);await dbSet(t.id,{done:!t.done})}
@@ -428,9 +479,28 @@ $('#rs').onclick=()=>{
   localStorage.removeItem('wp_prof');renderProf();render();
 };
 renderProf();
-['lat','lon','url','key'].forEach(k=>$('#'+k).value=cfg[k]);
+['lat','lon','url','key','furl','fkey','fperson'].forEach(k=>$('#'+k).value=cfg[k]);
+$('#fl').onclick=async()=>{
+  const fs=$('#fs');fs.className='';
+  if(!(cfg.furl&&cfg.fkey)){fs.className='bad';fs.textContent='Спершу вкажи URL і ключ дошки та натисни «Зберегти».';return}
+  fs.textContent='Входжу…';
+  await famLoad();
+  if(!fsb){fs.className='bad';fs.textContent=famState.msg||'Клієнт дошки не створено.';return}
+  const {error}=await fsb.auth.signInWithPassword({email:$('#femail').value.trim(),password:$('#fpass').value});
+  if(error){fs.className='bad';fs.textContent='Не вдалося увійти: '+error.message;return}
+  $('#fpass').value='';
+  await famLoad();renderDay();
+  if(famState.mode==='ok'){fs.className='ok';fs.textContent=`Увійшов. Відкритих задач для «${cfg.fperson}»: ${famTasks.length}.`}
+  else{fs.className='bad';fs.textContent='Увійшов, але задачі не завантажились: '+famState.msg}
+};
+$('#fo').onclick=async()=>{
+  if(fsb)await fsb.auth.signOut();
+  await famLoad();renderDay();
+  $('#fs').className='';$('#fs').textContent='Вийшов з родинної дошки.';
+};
 $('#sv').onclick=async()=>{
-  cfg={lat:+$('#lat').value||48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim()};
+  cfg={lat:+$('#lat').value||48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim(),
+    furl:$('#furl').value.trim(),fkey:$('#fkey').value.trim(),fperson:$('#fperson').value.trim()||'Олександр'};
   localStorage.wp_cfg=JSON.stringify(cfg);
   const ss=$('#ss');ss.className='';ss.textContent='Зберігаю і перевіряю підключення…';
   await init();
@@ -444,11 +514,13 @@ $('#sv').onclick=async()=>{
   }else{
     ss.textContent='Збережено. URL або ключ Supabase не вказано, справи лишаються в цьому браузері.';
   }
+  ss.textContent+=famInfo();
 };
 
 async function init(){
   sb=(cfg.url&&cfg.key&&window.supabase)?supabase.createClient(cfg.url,cfg.key):null;
-  await Promise.all([loadWeather(),dbLoad()]);
+  await Promise.all([loadWeather(),dbLoad(),famLoad()]);
+  $('#upd').textContent=Object.keys(H).length?'Оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}):'Прогноз не завантажено';
   render();
 }
 setTheme(document.documentElement.dataset.theme);
