@@ -15,6 +15,17 @@ create table wp_tasks(
 alter table wp_tasks enable row level security;
 create policy "anon all" on wp_tasks for all using (true) with check (true);
 notify pgrst, 'reload schema';
+
+Додатково: вид і категорія родинних задач (таблиця родинної дошки не змінюється):
+
+create table if not exists wp_family_meta(
+  task_id bigint primary key,
+  kind text,
+  profile text
+);
+alter table wp_family_meta enable row level security;
+create policy "anon all" on wp_family_meta for all using (true) with check (true);
+notify pgrst, 'reload schema';
 */
 ---
 <!DOCTYPE html>
@@ -52,6 +63,7 @@ header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:none}
 .fh{margin-top:14px;text-transform:none}
 .ft{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:5px 8px;margin-top:4px;border-left:4px solid var(--maybe);border-radius:6px;background:var(--bg)}
 .ft[data-p="1"]{border-left-color:var(--no)}.ft[data-p="3"]{border-left-color:var(--go)}
+.ft>div{min-width:0;overflow-wrap:anywhere}
 .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 details{position:relative}
 summary{cursor:pointer;list-style:none}
@@ -368,6 +380,23 @@ function render(){renderSrc();renderDb();renderCal();renderDay()}
 const kindOpts=k=>`<option value="out"${k==='out'?' selected':''}>Вулична</option><option value="in"${k==='in'?' selected':''}>Хатня</option>`;
 const profOpts=p=>Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===p?' selected':''}>${v.n}</option>`).join('');
 
+/* вид і категорія родинних задач: зберігаються тут, у родинній дошці нічого не міняється */
+let famMeta={};
+async function metaLoad(){
+  famMeta=JSON.parse(localStorage.wp_fmeta||'{}');
+  if(!sb)return;
+  const r=await sb.from('wp_family_meta').select('*');
+  if(r.error){note('Категорії родинних задач: '+r.error.message+' (беру локальні)');return}
+  famMeta=Object.fromEntries(r.data.map(x=>[x.task_id,{kind:x.kind,profile:x.profile}]));
+}
+async function metaSet(id,p){
+  famMeta[id]=Object.assign(famMeta[id]||{},p);
+  if(sb){
+    const r=await sb.from('wp_family_meta').upsert({task_id:Number(id),kind:famMeta[id].kind||null,profile:famMeta[id].profile||null});
+    if(r.error){note(r.error.message);localStorage.wp_fmeta=JSON.stringify(famMeta)}
+  }else localStorage.wp_fmeta=JSON.stringify(famMeta);
+}
+
 /* родинна дошка: окремий клієнт Supabase, лише читання */
 let fsb=null,fsbId='',famTasks=[],famState={mode:'off',msg:''};
 const FS={todo:'До виконання',doing:'В роботі'};
@@ -398,7 +427,15 @@ function famHtml(){
   if(m==='login')return h+'<p class="mut">Щоб бачити задачі, увійди в налаштуваннях (шестірня, розділ «Вхід у родинну дошку»).</p>';
   if(m==='err')return h+`<p class="s0">Не вдалося завантажити: ${esc(famState.msg)}</p>`;
   if(!famTasks.length)return h+`<p class="mut">Відкритих задач для «${esc(cfg.fperson)}» немає.</p>`;
-  return h+famTasks.map(t=>`<div class="ft" data-p="${t.priority}"><span>${esc(t.text)}</span><small class="mut">${FS[t.status]||esc(t.status)}</small></div>`).join('');
+  return h+famTasks.map(t=>{
+    const m=famMeta[t.id]||{},p=m.profile||pf;
+    const i=m.kind?taskInfo({kind:m.kind,profile:p,date:sel,duration:1}):null;
+    return `<div class="ft" data-p="${t.priority}"><div><span>${esc(t.text)}</span>`+
+      `<div class="tm"><select data-fk="${t.id}" aria-label="Вид"><option value=""${m.kind?'':' selected'}>Вид…</option>${kindOpts(m.kind)}</select>`+
+      (m.kind==='out'?`<select data-fp="${t.id}" aria-label="Категорія">${profOpts(p)}</select>`:'')+`</div>`+
+      (i?`<div class="${i.c}">${i.txt}</div>`:'')+`</div>`+
+      `<small class="mut">${FS[t.status]||esc(t.status)}</small></div>`;
+  }).join('');
 }
 
 let dbState={mode:'local',msg:''};
@@ -465,7 +502,14 @@ $('#day').onclick=async e=>{
   render();
 };
 $('#day').onchange=async e=>{
-  const s=e.target,id=s.dataset.ek||s.dataset.ep;if(!id)return;
+  const s=e.target;
+  if(s.dataset.fk||s.dataset.fp){
+    const fid=s.dataset.fk||s.dataset.fp,m=famMeta[fid]||{};
+    if(s.dataset.fk){const kind=s.value;await metaSet(fid,{kind:kind||null,profile:kind==='out'?(m.profile||pf):null})}
+    else await metaSet(fid,{profile:s.value});
+    renderDay();return;
+  }
+  const id=s.dataset.ek||s.dataset.ep;if(!id)return;
   if(s.dataset.ek){
     const kind=s.value,t=tasks.find(x=>x.id==id);
     await dbSet(id,{kind,profile:kind==='out'?(t.profile||pf):null});
@@ -533,6 +577,7 @@ $('#sv').onclick=async()=>{
 async function init(){
   sb=(cfg.url&&cfg.key&&window.supabase)?supabase.createClient(cfg.url,cfg.key):null;
   await Promise.all([loadWeather(),dbLoad(),famLoad()]);
+  await metaLoad();
   $('#upd').textContent=Object.keys(H).length?'Оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}):'Прогноз не завантажено';
   render();
 }
