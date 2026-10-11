@@ -102,6 +102,8 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .t{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
 .t.dn b{text-decoration:line-through;opacity:.6}
 .t button{padding:2px 8px}
+.tm{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:2px 0}
+.tm select{padding:1px 6px;font-size:.9em}
 .t .s2{color:var(--go)}.t .s1{color:var(--maybe)}.t .s0{color:var(--no)}.in,.n{color:var(--mut)}
 form{display:flex;flex-wrap:wrap;gap:6px;flex:none;margin-top:8px}
 form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:56px}
@@ -343,7 +345,7 @@ function renderDay(){
   if(!list.length)h+=`<p class="mut">Справ поки немає. Додай першу нижче.</p>`;
   for(const t of list){
     const i=taskInfo(t);
-    h+=`<div class="t${t.done?' dn':''}"><div><b>${esc(t.title)}</b> <span class="mut">${t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична'}, ${t.duration} год</span>`+
+    h+=`<div class="t${t.done?' dn':''}"><div><b>${esc(t.title)}</b><div class="tm"><select data-ek="${t.id}" aria-label="Вид">${kindOpts(t.kind)}</select>${t.kind==='out'?`<select data-ep="${t.id}" aria-label="Категорія">${profOpts(t.profile)}</select>`:''}<span class="mut">${t.duration} год</span></div>`+
        `<div class="${i.c}">${i.txt}`+
        (i.alt?`<br>Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button>`:(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
        `</div></div><div><button data-dn="${t.id}" aria-label="Готово">Готово</button> <button data-rm="${t.id}" aria-label="Видалити">Видалити</button></div></div>`;
@@ -363,6 +365,9 @@ function renderSrc(){
 function render(){renderSrc();renderDb();renderCal();renderDay()}
 
 /* зберігання: Supabase або localStorage як запасний варіант */
+const kindOpts=k=>`<option value="out"${k==='out'?' selected':''}>Вулична</option><option value="in"${k==='in'?' selected':''}>Хатня</option>`;
+const profOpts=p=>Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===p?' selected':''}>${v.n}</option>`).join('');
+
 /* родинна дошка: окремий клієнт Supabase, лише читання */
 let fsb=null,fsbId='',famTasks=[],famState={mode:'off',msg:''};
 const FS={todo:'До виконання',doing:'В роботі'};
@@ -457,6 +462,14 @@ $('#day').onclick=async e=>{
   else if(b.dataset.rm)await dbDel(b.dataset.rm);
   else if(b.dataset.mv){await dbSet(b.dataset.mv,{date:b.dataset.to});sel=b.dataset.to}
   else return;
+  render();
+};
+$('#day').onchange=async e=>{
+  const s=e.target,id=s.dataset.ek||s.dataset.ep;if(!id)return;
+  if(s.dataset.ek){
+    const kind=s.value,t=tasks.find(x=>x.id==id);
+    await dbSet(id,{kind,profile:kind==='out'?(t.profile||pf):null});
+  }else await dbSet(id,{profile:s.value});
   render();
 };
 $('#day').onsubmit=async e=>{
