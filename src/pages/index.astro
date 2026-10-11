@@ -8,28 +8,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Погодний планувальник</title>
 
-<!-- 
-SQL для Supabase (виконати один раз у SQL Editor):
-
-create table wp_tasks(
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  kind text not null default 'out',
-  profile text,
-  date date not null,
-  duration int not null default 1,
-  done boolean not null default false,
-  created_at timestamptz default now()
-);
-alter table wp_tasks enable row level security;
-create policy "anon all" on wp_tasks for all using (true) with check (true);
-notify pgrst, 'reload schema';
-
-Для таблиці family_tasks (родинна дошка) додай:
-alter table family_tasks add column if not exists kind text;
-alter table family_tasks add column if not exists profile text;
--->
-
 <script is:inline>
 (function(){var t=localStorage.wp_theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t})();
 </script>
@@ -345,19 +323,19 @@ function renderDay(){
   if(H[d]){
     h+=`<div class="strip">`+[...Array(24).keys()].map(x=>{
       const st=hourSt(d,x,pf),o=H[d][x],a=o?act(o):[];
-      if(!a.length) return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">❓</i><b>—</b></div>`;
+      if(!a.length) return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">&#x2753;</i><b>&mdash;</b></div>`;
       
       const t=Math.round(med(a.map(v=>v.t)));
       const rain=med(a.map(v=>v.p));
       const isDay=s && (x >= Math.floor(s.sr) && x < Math.ceil(s.ss));
       
-      let icon = '☀️';
-      if (rain >= 1) icon = '🌧️';
-      else if (rain > 0.1) icon = '🌦️';
-      else if (!isDay) icon = '🌙';
-      else if (rain > 0) icon = '💧';
+      let icon = '&#x2600;&#xFE0F;'; 
+      if (rain >= 1) icon = '&#x1F327;&#xFE0F;'; 
+      else if (rain > 0.1) icon = '&#x1F326;&#xFE0F;'; 
+      else if (!isDay) icon = '&#x1F319;'; 
+      else if (rain > 0) icon = '&#x1F4A7;'; 
 
-      return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">${icon}</i><b>${t}°</b></div>`;
+      return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">${icon}</i><b>${t}&deg;</b></div>`;
     }).join('')+`</div>`;
     h+=`<p class="mut">«${P.n}»: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год, лише вдень.</p>`;
     h+=`<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
