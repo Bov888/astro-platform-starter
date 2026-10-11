@@ -294,73 +294,88 @@ function taskInfo(t){
 function renderCal(){
   const y=cur.getFullYear(),m=cur.getMonth();
   $('#mt').textContent=MON[m]+' '+y;
-  $('#dws').innerHTML=DOW.map(d=>`<i class="dw">${d}</i>`).join('');
+  $('#dws').innerHTML=DOW.map(d=>'<i class="dw">'+d+'</i>').join('');
   let h='';
   const first=(new Date(y,m,1).getDay()+6)%7,nd=new Date(y,m+1,0).getDate();
   for(let i=0;i<first;i++)h+='<i></i>';
   for(let d=1;d<=nd;d++){
-    const ds=`${y}-${pad(m+1)}-${pad(d)}`,w=win(ds,pf,2),inf=dayInfo(ds);
+    const ds=y+'-'+pad(m+1)+'-'+pad(d),w=win(ds,pf,2),inf=dayInfo(ds);
     const nt=tasks.filter(t=>t.date===ds&&!t.done).length;
-    h+=`<button class="c s${w.st==null?'n':w.st}${ds===sel?' sel':''}${ds===today?' td':''}" data-d="${ds}"><b>${d}</b>`+
-       `<div class="bt">`+(inf?`<small>${Math.round(inf.tmax)}°${inf.rain>=0.5?' дощ':''}</small>`:'<small>&nbsp;</small>')+
-       (SUN[ds]?`<small class="sun">↑${fh(SUN[ds].sr)} ↓${fh(SUN[ds].ss)}</small>`:'')+`</div>`+
-       (nt?`<em>${nt}</em>`:'')+`</button>`;
+    h+='<button class="c s'+(w.st==null?'n':w.st)+(ds===sel?' sel':'')+(ds===today?' td':'')+'" data-d="'+ds+'"><b>'+d+'</b>'+
+       '<div class="bt">'+(inf?'<small>'+Math.round(inf.tmax)+'°'+(inf.rain>=0.5?' дощ':'')+'</small>':'<small>&nbsp;</small>')+
+       (SUN[ds]?'<small class="sun">↑'+fh(SUN[ds].sr)+' ↓'+fh(SUN[ds].ss)+'</small>':'')+'</div>'+
+       (nt?'<em>'+nt+'</em>':'')+'</button>';
   }
   $('#cal').innerHTML=h;
 }
 
 function renderDay(){
   const d=sel,s=SUN[d],P=PROFILES[pf];
-  let h=`<div class="dtop"><h3>${fmtDate(d)}</h3>`;
+  let h='<div class="dtop"><h3>'+fmtDate(d)+'</h3>';
   if(s){
     const L=s.ss-s.sr,tm=Math.round(L*60),pv=SUN[new Date(new Date(d+'T12:00').getTime()-864e5).toLocaleDateString('en-CA')];
     const dl=pv?Math.round((L-(pv.ss-pv.sr))*60):null;
     const now=d===today?(local(new Date())[1]+new Date().getMinutes()/60)/24*100:null;
-    h+=`<div class="sunbar" title="Світловий день на шкалі 0–24 год"><i style="left:${s.sr/24*100}%;width:${L/24*100}%"></i>${now!=null?`<b class="now-bar" style="left:${now}%"></b>`:''}</div>`+
-       `<div class="sunt"><span>↑ схід ${fh(s.sr)}</span><span>${Math.floor(tm/60)} год ${tm%60} хв${dl==null||dl===0?'':`, ${dl>0?'+':'−'}${Math.abs(dl)} хв до вчора`}</span><span>захід ${fh(s.ss)} ↓</span></div>`;
+    h+='<div class="sunbar" title="Світловий день на шкалі 0–24 год"><i style="left:'+(s.sr/24*100)+'%;width:'+(L/24*100)+'%"></i>'+(now!=null?'<b class="now-bar" style="left:'+now+'%"></b>':'')+'</div>'+
+       '<div class="sunt"><span>↑ схід '+fh(s.sr)+'</span><span>'+Math.floor(tm/60)+' год '+tm%60+' хв'+(dl==null||dl===0?'':', '+(dl>0?'+':'−')+Math.abs(dl)+' хв до вчора')+'</span><span>захід '+fh(s.ss)+' ↓</span></div>';
   }
   if(H[d]){
-    h+=`<div class="strip">`+[...Array(24).keys()].map(x=>{
+    h+='<div class="strip">';
+    for(let x=0; x<24; x++){
       const st=hourSt(d,x,pf),o=H[d][x],a=o?act(o):[];
-      if(!a.length) return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">?</i><b>—</b></div>`;
-      
+      if(!a.length){
+        h+='<div class="h s'+(st==null?'n':st)+'"><span>'+pad(x)+':00</span><i class="wi">?</i><b>—</b></div>';
+        continue;
+      }
       const t=Math.round(med(a.map(v=>v.t)));
       const rain=med(a.map(v=>v.p));
       const isDay=s && (x >= Math.floor(s.sr) && x < Math.ceil(s.ss));
-      
-      let icon = 'Ясно'; 
-      if (rain >= 1) icon = 'Злива'; 
-      else if (rain > 0.1) icon = 'Дощ'; 
-      else if (!isDay) icon = 'Ніч'; 
-      else if (rain > 0) icon = 'Млиця'; 
-
-      return `<div class="h s${st==null?'n':st}"><span>${pad(x)}:00</span><i class="wi">${icon}</i><b>${t}°</b></div>`;
-    }).join('')+`</div>`;
-    h+=`<p class="mut">«${P.n}»: ${P.tmin}…${P.tmax}°, вітер до ${P.w} км/год, опади до ${P.p} мм/год, лише вдень.</p>`;
-    h+=`<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>`+
-      Object.entries(srcStats(d)).map(([k,v])=>`<tr${off.has(k)?' class="off"':''}><td>${k}</td><td>${Math.round(v.tmin)}…${Math.round(v.tmax)}°</td><td>${v.p.toFixed(1)} мм</td><td>${Math.round(v.w)} км/год</td></tr>`).join('')+`</table>`;
-  }else h+=`<p class="mut">Прогноз на цю дату ще недоступний.</p>`;
-  h+=`</div><div class="tl"><h3 style="text-transform:none">Справи</h3>`;
+      let icon='Ясно';
+      if(rain>=1)icon='Злива';
+      else if(rain>0.1)icon='Дощ';
+      else if(!isDay)icon='Ніч';
+      else if(rain>0)icon='Млиця';
+      h+='<div class="h s'+(st==null?'n':st)+'"><span>'+pad(x)+':00</span><i class="wi">'+icon+'</i><b>'+t+'°</b></div>';
+    }
+    h+='</div>';
+    h+='<p class="mut">«'+P.n+'»: '+P.tmin+'…'+P.tmax+'°, вітер до '+P.w+' км/год, опади до '+P.p+' мм/год, лише вдень.</p>';
+    h+='<table><tr><th>Джерело</th><th>Температура</th><th>Опади</th><th>Макс. вітер</th></tr>';
+    for(const [k,v] of Object.entries(srcStats(d))){
+      h+='<tr'+(off.has(k)?' class="off"':'')+'><td>'+k+'</td><td>'+Math.round(v.tmin)+'…'+Math.round(v.tmax)+'°</td><td>'+v.p.toFixed(1)+' мм</td><td>'+Math.round(v.w)+' км/год</td></tr>';
+    }
+    h+='</table>';
+  }else h+='<p class="mut">Прогноз на цю дату ще недоступний.</p>';
+  h+='</div><div class="tl"><h3 style="text-transform:none">Справи</h3>';
   const list=tasks.filter(t=>t.date===d);
-  if(!list.length)h+=`<p class="mut">Справ поки немає. Додай першу нижче.</p>`;
+  if(!list.length)h+='<p class="mut">Справ поки немає. Додай першу нижче.</p>';
   for(const t of list){
     const i=taskInfo(t);
-    h+=`<div class="t${t.done?' dn':''}"><div><b>${esc(t.title)}</b> <span class="mut">${t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична'}, ${t.duration} год</span>`+
-       `<div class="${i.c}">${i.txt}`+
-       (i.alt?`<br>Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button>`:(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
-       `</div></div><div><button data-dn="${t.id}" aria-label="Готово">Готово</button> <button data-rm="${t.id}" aria-label="Видалити">Видалити</button></div></div>`;
+    h+='<div class="t'+(t.done?' dn':'')+'"><div><b>'+esc(t.title)+'</b> <span class="mut">'+(t.kind==='in'?'хатня':PROFILES[t.profile]?.n||'вулична')+', '+t.duration+' год</span>'+
+       '<div class="'+i.c+'">'+i.txt+
+       (i.alt?'<br>Найближче вікно: '+fmtDate(i.alt.d)+', '+rng(i.alt.w.r)+' <button data-mv="'+t.id+'" data-to="'+i.alt.d+'">Перенести</button>':(i.c==='s0'?'<br>У прогнозі вікон ще немає':''))+
+       '</div></div><div><button data-dn="'+t.id+'" aria-label="Готово">Готово</button> <button data-rm="'+t.id+'" aria-label="Видалити">Видалити</button></div></div>';
   }
   h+=famHtml();
-  h+=`</div><form id="add"><input name="title" placeholder="Що зробити" required>`+
-     `<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>`+
-     `<select name="profile">${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}"${k===pf?' selected':''}>${v.n}</option>`).join('')}</select>`+
-     `<input name="duration" type="number" min="1" max="12" value="1" aria-label="Тривалість, год">`+
-     `<button class="pri">Додати</button></form>`;
+  h+='</div><form id="add"><input name="title" placeholder="Що зробити" required>'+
+     '<select name="kind"><option value="out">Вулична</option><option value="in">Хатня</option></select>'+
+     '<select name="profile">';
+  for(const [k,v] of Object.entries(PROFILES)){
+    h+='<option value="'+k+'"'+(k===pf?' selected':'')+'>'+v.n+'</option>';
+  }
+  h+='</select><input name="duration" type="number" min="1" max="12" value="1" aria-label="Тривалість, год"><button class="pri">Додати</button></form>';
   $('#day').innerHTML=h;
 }
+
 function renderSrc(){
   const have=avail();
-  $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${!have.has(k)?'Джерело недоступне':off.has(k)?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути'}">${k}</button>`).join('');
+  let h='';
+  for(const k of SOURCES){
+    const unavail=!have.has(k), disabled=off.has(k);
+    const cls='chip '+(unavail?'bad':disabled?'off':'ok');
+    const title=unavail?'Джерело недоступне':disabled?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути';
+    h+='<button class="'+cls+'" data-s="'+k+'" title="'+title+'">'+k+'</button>';
+  }
+  $('#src').innerHTML=h;
 }
 function render(){renderSrc();renderDb();renderCal();renderDay()}
 
@@ -383,35 +398,37 @@ async function famLoad(){
 function famInfo(){
   const m=famState.mode;
   if(m==='login')return ' Родинна дошка: виконай вхід нижче.';
-  if(m==='ok')return ` Родинна дошка: задач для «${cfg.fperson}»: ${famTasks.length}.`;
-  if(m==='err')return ` Родинна дошка: помилка (${famState.msg}).`;
+  if(m==='ok')return ' Родинна дошка: задач для «'+cfg.fperson+'»: '+famTasks.length+'.';
+  if(m==='err')return ' Родинна дошка: помилка ('+famState.msg+').';
   return '';
 }
 function famHtml(){
   const m=famState.mode;if(m==='off')return '';
-  const h=`<h3 class="fh">З родинної дошки</h3>`;
+  const h='<h3 class="fh">З родинної дошки</h3>';
   if(m==='login')return h+'<p class="mut">Щоб бачити задачі, увійди в налаштуваннях (шестірня, розділ «Вхід у родинну дошку»).</p>';
-  if(m==='err')return h+`<p class="s0">Не вдалося завантажити: ${esc(famState.msg)}</p>`;
-  if(!famTasks.length)return h+`<p class="mut">Відкритих задач для «${esc(cfg.fperson)}» немає.</p>`;
+  if(m==='err')return h+'<p class="s0">Не вдалося завантажити: '+esc(famState.msg)+'</p>';
+  if(!famTasks.length)return h+'<p class="mut">Відкритих задач для «'+esc(cfg.fperson)+'» немає.</p>';
   
-  return h+famTasks.map(t=>{
+  let res=h;
+  for(const t of famTasks){
     const tk=t.kind||'out', tp=t.profile||pf||'work';
-    return `<div class="ft" data-p="${t.priority}">
-      <div style="flex:1;min-width:0;padding-right:4px">
-        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:bold" title="${esc(t.text)}">${esc(t.text)}</div>
-        <small class="mut" style="display:block">${FS[t.status]||esc(t.status)}</small>
-      </div>
-      <div style="display:flex;gap:6px;flex:none;align-items:center">
-        <select data-fid="${t.id}" data-fld="kind" class="f-sel">
-          <option value="out" ${tk==='out'?'selected':''}>Вулична</option>
-          <option value="in" ${tk==='in'?'selected':''}>Хатня</option>
-        </select>
-        <select data-fid="${t.id}" data-fld="profile" class="f-sel" style="display:${tk==='in'?'none':'inline-block'}">
-          ${Object.entries(PROFILES).map(([k,v])=>`<option value="${k}" ${tp===k?'selected':''}>${v.n}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
-  }).join('');
+    res+='<div class="ft" data-p="'+t.priority+'">'+
+      '<div style="flex:1;min-width:0;padding-right:4px">'+
+        '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:bold" title="'+esc(t.text)+'">'+esc(t.text)+'</div>'+
+        '<small class="mut" style="display:block">'+(FS[t.status]||esc(t.status))+'</small>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;flex:none;align-items:center">'+
+        '<select data-fid="'+t.id+'" data-fld="kind" class="f-sel">'+
+          '<option value="out" '+(tk==='out'?'selected':'')+'>Вулична</option>'+
+          '<option value="in" '+(tk==='in'?'selected':'')+'>Хатня</option>'+
+        '</select>'+
+        '<select data-fid="'+t.id+'" data-fld="profile" class="f-sel" style="display:'+(tk==='in'?'none':'inline-block')+'">';
+    for(const [k,v] of Object.entries(PROFILES)){
+      res+='<option value="'+k+'" '+(tp===k?'selected':'')+'>'+v.n+'</option>';
+    }
+    res+='</select></div></div>';
+  }
+  return res;
 }
 
 let dbState={mode:'local',msg:''};
@@ -525,13 +542,13 @@ $('#fl').onclick=async()=>{
   if(error){fs.className='bad';fs.textContent='Не вдалося увійти: '+error.message;return}
   $('#fpass').value='';
   await famLoad();renderDay();
-  if(famState.mode==='ok'){fs.className='ok';fs.textContent=`Увійшов. Відкритих задач для «${cfg.fperson}»: ${famTasks.length}.`}
+  if(famState.mode==='ok'){fs.className='ok';fs.textContent='Увійшов. Відкритих задач для «'+cfg.fperson+'»: '+famTasks.length+'.';}
   else{fs.className='bad';fs.textContent='Увійшов, але задачі не завантажились: '+famState.msg}
 };
 $('#fo').onclick=async()=>{
   if(fsb)await fsb.auth.signOut();
   await famLoad();renderDay();
-  $('#fs').className='';$('#fs'].textContent='Вийшов з родинної дошки.';
+  $('#fs').className='';$('#fs').textContent='Вийшов з родинної дошки.';
 };
 $('#sv').onclick=async()=>{
   cfg={lat:+$('#lat').value\vert{}\vert{}48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim(),
@@ -542,10 +559,10 @@ $('#sv').onclick=async()=>{
   const loc=JSON.parse(localStorage.wp_tasks||'[]').length,m=dbState.mode;
   if(m==='sb'){
     ss.className='ok';
-    ss.textContent=`Збережено. Supabase підключено, справ у базі: ${tasks.length}.`+(loc?` У браузері лишилось ${loc} локальних справ, у базу вони не перенесені.`:'');
+    ss.textContent='Збережено. Supabase підключено, справ у базі: '+tasks.length+'.' + (loc?' У браузері лишилось '+loc+' локальних справ, у базу вони не перенесені.':'');
   }else if(m==='err'){
     ss.className='bad';
-    ss.textContent=`Налаштування збережено, але база недоступна: ${dbState.msg}. Працюю локально.`;
+    ss.textContent='Налаштування збережено, але база недоступна: '+dbState.msg+'. Працюю локально.';
   }else{
     ss.textContent='Збережено. URL або ключ Supabase не вказано, справи лишаються в цьому браузері.';
   }
