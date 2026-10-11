@@ -48,6 +48,7 @@ header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:none}
 .chip.bad{border-color:var(--no);color:var(--no);cursor:default}
 .chip.off{border-style:dashed;color:var(--mut);text-decoration:line-through}
 #note{color:var(--no);font-size:.9em}
+#ss{font-size:.9em;color:var(--mut)}#ss.ok{color:var(--go)}#ss.bad{color:var(--no)}
 .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 details{position:relative}
 summary{cursor:pointer;list-style:none}
@@ -115,6 +116,7 @@ form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:
   <h1>Погодний планувальник</h1>
   <select id="pf" aria-label="Профіль активності"></select>
   <span id="src"></span>
+  <span id="db" class="chip"></span>
   <button id="rf" title="Оновити прогноз">Оновити</button>
   <span id="note"></span>
   <div class="right">
@@ -131,6 +133,7 @@ form input[name=title]{flex:1 1 140px;min-width:0}form input[type=number]{width:
         <label>Supabase URL <input id="url" placeholder="https://xxx.supabase.co"></label>
         <label>Supabase anon key <input id="key"></label>
         <button id="sv" class="pri">Зберегти</button>
+        <div id="ss" role="status"></div>
       </div>
     </details>
   </div>
@@ -343,16 +346,28 @@ function renderSrc(){
   const have=avail();
   $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${!have.has(k)?'Джерело недоступне':off.has(k)?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути'}">${k}</button>`).join('');
 }
-function render(){renderSrc();renderCal();renderDay()}
+function render(){renderSrc();renderDb();renderCal();renderDay()}
 
 /* зберігання: Supabase або localStorage як запасний варіант */
+let dbState={mode:'local',msg:''};
 async function dbLoad(){
+  dbState={mode:'local',msg:''};
+  if(cfg.url&&cfg.key&&!window.supabase)dbState={mode:'err',msg:'бібліотека Supabase не завантажилась'};
   if(sb){
-    const r=await sb.from('wp_tasks').select('*').order('date');
-    if(!r.error){tasks=r.data;return}
-    note('Supabase: '+r.error.message+'. Працюю локально.');sb=null;
+    try{
+      const r=await sb.from('wp_tasks').select('*').order('date');
+      if(!r.error){tasks=r.data;dbState={mode:'sb',msg:''};return}
+      dbState={mode:'err',msg:r.error.message};
+    }catch(e){dbState={mode:'err',msg:String(e.message||e)}}
+    note('Supabase: '+dbState.msg+'. Працюю локально.');sb=null;
   }
   tasks=JSON.parse(localStorage.wp_tasks||'[]');
+}
+function renderDb(){
+  const e=$('#db'),m=dbState.mode;
+  e.className='chip '+(m==='sb'?'ok':m==='err'?'bad':'');
+  e.textContent=m==='sb'?'База: Supabase':m==='err'?'База: помилка':'База: локально';
+  e.title=m==='err'?dbState.msg:m==='sb'?'Справи зберігаються в Supabase':'Справи зберігаються лише в цьому браузері';
 }
 const lsSave=()=>{if(!sb)localStorage.wp_tasks=JSON.stringify(tasks)};
 async function dbAdd(t){
@@ -414,9 +429,21 @@ $('#rs').onclick=()=>{
 };
 renderProf();
 ['lat','lon','url','key'].forEach(k=>$('#'+k).value=cfg[k]);
-$('#sv').onclick=()=>{
+$('#sv').onclick=async()=>{
   cfg={lat:+$('#lat').value||48.53,lon:+$('#lon').value||25.04,url:$('#url').value.trim(),key:$('#key').value.trim()};
-  localStorage.wp_cfg=JSON.stringify(cfg);init();
+  localStorage.wp_cfg=JSON.stringify(cfg);
+  const ss=$('#ss');ss.className='';ss.textContent='Зберігаю і перевіряю підключення…';
+  await init();
+  const loc=JSON.parse(localStorage.wp_tasks||'[]').length,m=dbState.mode;
+  if(m==='sb'){
+    ss.className='ok';
+    ss.textContent=`Збережено. Supabase підключено, справ у базі: ${tasks.length}.`+(loc?` У браузері лишилось ${loc} локальних справ, у базу вони не перенесені.`:'');
+  }else if(m==='err'){
+    ss.className='bad';
+    ss.textContent=`Налаштування збережено, але база недоступна: ${dbState.msg}. Працюю локально.`;
+  }else{
+    ss.textContent='Збережено. URL або ключ Supabase не вказано, справи лишаються в цьому браузері.';
+  }
 };
 
 async function init(){
