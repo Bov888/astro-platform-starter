@@ -219,6 +219,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 
 .dnav{display:flex;align-items:center;gap:8px}
 .dtw{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
+.dnav .back,.dnav .nv{display:none}
 .wsum{display:none;width:100%;min-height:44px;margin-top:10px;padding:8px 12px;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:12px;font-size:14px}
 .wsum .ti{margin:0;font-size:14px;font-weight:500}
 .chv{width:18px;height:18px;flex:none;fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
@@ -250,12 +251,15 @@ tr.off td{opacity:.45;text-decoration:line-through}
 @media (min-width:1000px){
   main{grid-template-columns:minmax(0,1.5fr) minmax(390px,1fr)}
 }
-/* до 700px (телефон у портреті): календар зверху, день одразу під ним, без порожнього місця */
+/* до 700px (телефон у портреті): календар і день на окремих екранах */
 @media (max-width:699px){
-  main{grid-template-rows:auto 1fr}
-  #cal{grid-auto-rows:56px}
+  main[data-view=cal] #day{display:none}
+  main[data-view=day] .calcard{display:none}
+  .dnav .back,.dnav .nv{display:inline-grid}
+  #cal{flex:1 1 auto;grid-auto-rows:minmax(58px,1fr)}
   .side{grid-template-rows:auto 1fr}
   .tl{flex:1}
+  body:has(main[data-view=day]) #src,body:has(main[data-view=day]) #upd{display:none}
 }
 @media (max-width:600px){
   body{gap:10px;font-size:15px}
@@ -285,6 +289,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .chip{padding:2px 9px;font-size:11.5px;min-height:26px}
   .cn em{position:absolute;top:6px;right:6px;width:8px;height:8px;min-width:0;padding:0;font-size:0;border-radius:50%}
   .dl{display:none}.ds{display:inline}
+  .tag{display:none}
 }
 @media (max-width:380px){
   .strip{grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -378,8 +383,8 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </div>
 </header>
 <p id="note" role="status"></p>
-<main>
-  <section class="card" aria-label="Календар">
+<main data-view="cal">
+  <section class="card calcard" aria-label="Календар">
     <div class="nav">
       <button id="pm" class="ib" aria-label="Попередній місяць"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
       <h2 id="mt"></h2>
@@ -569,8 +574,13 @@ function renderDay(){
   const d=sel,s=SUN[d],P=PROFILES[pf];
   const inf0=dayInfo(d),w2=win(d,pf,2);
   const sw=w2.st==null?'прогнозу ще немає':w2.st>0?`${P.n}: ${rng(w2.r)}`:`${P.n}: вікон немає`;
-  const dlong=fmtDate(d),dshort=new Date(d+'T12:00').toLocaleDateString('uk-UA',{weekday:'short',day:'numeric',month:'long'});
-  let h=`<section class="card wx${wxOpen?' open':''}"><div class="dnav"><div class="dtw"><h2 class="dt"><span class="dl">${dlong}</span><span class="ds">${dshort}</span></h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div></div>`+
+  const dlong=fmtDate(d),dm=new Date(d+'T12:00').toLocaleDateString('uk-UA',{day:'numeric',month:'long'});
+  const dshort=d===today?'Сьогодні, '+dm:new Date(d+'T12:00').toLocaleDateString('uk-UA',{weekday:'short',day:'numeric',month:'long'});
+  let h=`<section class="card wx${wxOpen?' open':''}"><div class="dnav">`+
+    `<button type="button" class="ib back" data-back="1" aria-label="До календаря" title="До календаря"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>`+
+    `<div class="dtw"><h2 class="dt"><span class="dl">${dlong}</span><span class="ds">${dshort}</span></h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div>`+
+    `<button type="button" class="ib nv" data-go="-1" aria-label="Попередній день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>`+
+    `<button type="button" class="ib nv" data-go="1" aria-label="Наступний день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>`+
     `<button type="button" class="wsum" data-wx="1" aria-expanded="${wxOpen}"><span class="ti ${w2.st==null?'n':'s'+w2.st}"><i class="dot"></i><span>${inf0?Math.round(inf0.tmax)+'° · ':''}${sw}</span></span><svg class="chv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`+
     `<div class="wxb">`;
   if(s){
@@ -741,10 +751,18 @@ $('#src').onclick=e=>{
 };
 $('#pm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);renderCal()};
 $('#nm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);renderCal()};
+/* телефон у портреті: календар і день по черзі; системна кнопка "назад" повертає до календаря */
+const narrow=()=>matchMedia('(max-width:699px)').matches;
+function setView(v,push){
+  $('main').dataset.view=v;
+  if(push&&v==='day'){try{history.pushState({v:'day'},'')}catch(e){}}
+}
+function goBack(){if(history.state&&history.state.v==='day')history.back();else setView('cal')}
+window.addEventListener('popstate',()=>setView('cal'));
 $('#cal').onclick=e=>{
   const b=e.target.closest('[data-d]');if(!b)return;
   sel=b.dataset.d;render();
-  if(matchMedia('(max-width:699px)').matches)$('#day .wx')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  if(narrow()){setView('day',true);window.scrollTo(0,0)}
 };
 $('#rf').onclick=async()=>{
   const b=$('#rf');b.disabled=true;b.textContent='Оновлюю…';
@@ -753,6 +771,12 @@ $('#rf').onclick=async()=>{
 };
 $('#day').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.back){goBack();return}
+  if(b.dataset.go){
+    const dt=new Date(sel+'T12:00');dt.setDate(dt.getDate()+Number(b.dataset.go));
+    sel=dt.toLocaleDateString('en-CA');cur=new Date(dt.getFullYear(),dt.getMonth(),1);
+    render();window.scrollTo(0,0);return;
+  }
   if(b.dataset.wx){wxOpen=!wxOpen;b.closest('.wx').classList.toggle('open',wxOpen);b.setAttribute('aria-expanded',String(wxOpen));return}
   if(b.dataset.dn){const t=tasks.find(x=>x.id==b.dataset.dn);await dbSet(t.id,{done:!t.done})}
   else if(b.dataset.rm)await dbDel(b.dataset.rm);
