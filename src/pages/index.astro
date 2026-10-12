@@ -119,7 +119,7 @@ main{flex:1;min-height:0;display:grid;gap:14px;grid-template-columns:1fr}
 .dw.we{color:color-mix(in srgb,var(--no) 65%,var(--mut))}
 #cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:68px;gap:6px}
 .void{visibility:hidden}
-.c{min-width:0;min-height:0;padding:7px 9px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;background:var(--soft);border:1.5px solid var(--line);border-radius:13px;transition:transform .12s,box-shadow .12s,border-color .12s}
+.c{position:relative;min-width:0;min-height:0;padding:7px 9px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;background:var(--soft);border:1.5px solid var(--line);border-radius:13px;transition:transform .12s,box-shadow .12s,border-color .12s}
 .c:hover:not(:disabled){transform:translateY(-1px);border-color:var(--acc)}
 .cn{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .cn b{min-width:1.8em;height:1.8em;display:inline-grid;place-items:center;border-radius:99px;font-size:clamp(14px,2.3vh,19px);font-weight:600;margin:-2px 0 0 -4px}
@@ -148,6 +148,7 @@ main{flex:1;min-height:0;display:grid;gap:14px;grid-template-columns:1fr}
 .dh{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
 .dt{font:600 22px/1.2 var(--serif)}
 .dt::first-letter{text-transform:uppercase}
+.ds{display:none}
 .tag{font-size:12px;font-weight:600;padding:2px 10px;border-radius:99px;background:var(--acc-soft);color:var(--acc)}
 .sunbox{margin:14px 0 10px}
 .sunbar{position:relative;height:10px;border-radius:99px;background:var(--soft);border:1px solid var(--line)}
@@ -218,7 +219,6 @@ tr.off td{opacity:.45;text-decoration:line-through}
 
 .dnav{display:flex;align-items:center;gap:8px}
 .dtw{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
-.dnav .back,.dnav .nv{display:none}
 .wsum{display:none;width:100%;min-height:44px;margin-top:10px;padding:8px 12px;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:12px;font-size:14px}
 .wsum .ti{margin:0;font-size:14px;font-weight:500}
 .chv{width:18px;height:18px;flex:none;fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
@@ -250,12 +250,10 @@ tr.off td{opacity:.45;text-decoration:line-through}
 @media (min-width:1000px){
   main{grid-template-columns:minmax(0,1.5fr) minmax(390px,1fr)}
 }
-/* до 700px (телефон у портреті): календар і день по черзі, без порожнього місця */
+/* до 700px (телефон у портреті): календар зверху, день одразу під ним, без порожнього місця */
 @media (max-width:699px){
-  main[data-view=cal] #day{display:none}
-  main[data-view=day] .calcard{display:none}
-  .dnav .back,.dnav .nv{display:inline-grid}
-  #cal{flex:1 1 auto;grid-auto-rows:minmax(58px,1fr)}
+  main{grid-template-rows:auto 1fr}
+  #cal{grid-auto-rows:56px}
   .side{grid-template-rows:auto 1fr}
   .tl{flex:1}
 }
@@ -278,10 +276,24 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .ft{flex-direction:column}
   .pill{align-self:flex-start}
   .two{grid-template-columns:1fr 1fr}
+  .bar{flex-wrap:wrap;overflow:visible;margin:0;padding:0;gap:6px}
+  #pf{order:1;flex:1 1 120px}
+  #rf{order:2}
+  #db{order:3}
+  #src{order:4;flex:1 1 100%;flex-wrap:wrap;gap:5px}
+  #upd{order:5;font-size:12px}
+  .chip{padding:2px 9px;font-size:11.5px;min-height:26px}
+  .cn em{position:absolute;top:6px;right:6px;width:8px;height:8px;min-width:0;padding:0;font-size:0;border-radius:50%}
+  .dl{display:none}.ds{display:inline}
 }
 @media (max-width:380px){
   .strip{grid-template-columns:repeat(6,minmax(0,1fr))}
   .c{padding:4px 5px}
+}
+@media (max-height:640px) and (min-width:700px){
+  .side{overflow-y:auto;grid-template-rows:auto auto;align-content:start;scrollbar-width:thin}
+  .tk{overflow:visible}
+  .tl{flex:none;overflow:visible;margin-right:0;padding-right:0}
 }
 @media (max-height:500px) and (min-width:700px){
   body{gap:8px;padding-top:max(8px,env(safe-area-inset-top));padding-bottom:max(8px,env(safe-area-inset-bottom))}
@@ -302,6 +314,12 @@ tr.off td{opacity:.45;text-decoration:line-through}
   .cn b{margin:0;min-width:1.6em;height:1.6em;font-size:14px}
   .bt{flex-direction:row}
   .tp{font-size:13px}
+  .tp .ic{display:none}
+  .tp.rn{color:var(--rain)}
+  .cn em{position:absolute;top:4px;right:4px;width:7px;height:7px;min-width:0;padding:0;font-size:0;border-radius:50%}
+  #upd{display:none}
+  .chip{padding:2px 8px;font-size:11px;min-height:26px}
+  .bar select{min-height:32px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -360,8 +378,8 @@ tr.off td{opacity:.45;text-decoration:line-through}
   </div>
 </header>
 <p id="note" role="status"></p>
-<main data-view="cal">
-  <section class="card calcard" aria-label="Календар">
+<main>
+  <section class="card" aria-label="Календар">
     <div class="nav">
       <button id="pm" class="ib" aria-label="Попередній місяць"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
       <h2 id="mt"></h2>
@@ -538,7 +556,7 @@ function renderCal(){
     const lbl=`${fmtDate(ds)}. ${STW[w.st]||'прогнозу ще немає'}.`+(inf?` До ${Math.round(inf.tmax)}°${inf.rain>=0.5?', дощ':''}.`:'')+(nt?` Справ: ${nt}.`:'');
     h+=`<button type="button" class="c s${w.st==null?'n':w.st}${ds===sel?' sel':''}${ds===today?' td':''}" data-d="${ds}" aria-label="${lbl}" aria-pressed="${ds===sel}"${ds===today?' aria-current="date"':''}>`+
        `<span class="cn"><b>${d}</b>${nt?`<em title="Справ: ${nt}">${nt}</em>`:''}</span>`+
-       `<span class="bt"><span class="tp">${inf?Math.round(inf.tmax)+'°'+(inf.rain>=0.5?IC.rain:''):'&nbsp;'}</span>`+
+       `<span class="bt"><span class="tp${inf&&inf.rain>=0.5?' rn':''}">${inf?Math.round(inf.tmax)+'°'+(inf.rain>=0.5?IC.rain:''):'&nbsp;'}</span>`+
        (sn?`<span class="sun">${IC.sun}${fh(sn.sr)}–${fh(sn.ss)}</span>`:'')+`</span></button>`;
   }
   $('#cal').innerHTML=h;
@@ -551,11 +569,8 @@ function renderDay(){
   const d=sel,s=SUN[d],P=PROFILES[pf];
   const inf0=dayInfo(d),w2=win(d,pf,2);
   const sw=w2.st==null?'прогнозу ще немає':w2.st>0?`${P.n}: ${rng(w2.r)}`:`${P.n}: вікон немає`;
-  let h=`<section class="card wx${wxOpen?' open':''}"><div class="dnav">`+
-    `<button type="button" class="ib back" data-back="1" aria-label="До календаря"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>`+
-    `<div class="dtw"><h2 class="dt">${fmtDate(d)}</h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div>`+
-    `<button type="button" class="ib nv" data-go="-1" aria-label="Попередній день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>`+
-    `<button type="button" class="ib nv" data-go="1" aria-label="Наступний день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>`+
+  const dlong=fmtDate(d),dshort=new Date(d+'T12:00').toLocaleDateString('uk-UA',{weekday:'short',day:'numeric',month:'long'});
+  let h=`<section class="card wx${wxOpen?' open':''}"><div class="dnav"><div class="dtw"><h2 class="dt"><span class="dl">${dlong}</span><span class="ds">${dshort}</span></h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div></div>`+
     `<button type="button" class="wsum" data-wx="1" aria-expanded="${wxOpen}"><span class="ti ${w2.st==null?'n':'s'+w2.st}"><i class="dot"></i><span>${inf0?Math.round(inf0.tmax)+'° · ':''}${sw}</span></span><svg class="chv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`+
     `<div class="wxb">`;
   if(s){
@@ -593,8 +608,8 @@ function renderDay(){
     h+=`<div class="t${t.done?' dn':''}">`+
        `<button type="button" class="ck" data-dn="${t.id}" aria-label="${t.done?'Повернути в роботу':'Позначити виконаною'}" title="${t.done?'Повернути в роботу':'Позначити виконаною'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`+
        `<div class="tb"><b class="tt">${esc(t.title)}</b>`+
-       `<div class="tm"><select data-ek="${t.id}" aria-label="Вид">${kindOpts(t.kind)}</select>${t.kind==='out'?`<select data-ep="${t.id}" aria-label="Категорія">${profOpts(t.profile)}</select>`:''}<span class="mut">${t.duration} год</span></div>`+
-       `<div class="ti ${i.c}"><i class="dot"></i><span>${i.txt}</span></div>`+
+       `<div class="tm"><select data-ek="${t.id}" aria-label="Вид">${kindOpts(t.kind)}</select>${t.kind==='out'?`<select data-ep="${t.id}" aria-label="Категорія">${profOpts(t.profile)}</select>`:''}</div>`+
+       `<div class="ti ${i.c}"><i class="dot"></i><span>${t.duration} год · ${i.txt}</span></div>`+
        (i.alt?`<div class="alt">Найближче вікно: ${fmtDate(i.alt.d)}, ${rng(i.alt.w.r)} <button type="button" class="gh" data-mv="${t.id}" data-to="${i.alt.d}">Перенести</button></div>`:(i.c==='s0'?'<div class="alt">У прогнозі вікон ще немає</div>':''))+
        `</div><button type="button" class="x" data-rm="${t.id}" aria-label="Видалити справу" title="Видалити"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>`;
   }
@@ -608,9 +623,10 @@ function renderDay(){
   if(keep)$('#add').elements.title.value=keep;
   if(keepTop)$('#day .tl').scrollTop=keepTop;
 }
+const SHORT={'OM-ECMWF':'ECMWF','OM-GFS':'GFS','OM-ICON':'ICON','MET.no':'MET.no'};
 function renderSrc(){
   const have=avail();
-  $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${!have.has(k)?'Джерело недоступне':off.has(k)?'Вимкнено, натисни щоб увімкнути':'Увімкнено, натисни щоб вимкнути'}">${k}</button>`).join('');
+  $('#src').innerHTML=SOURCES.map(k=>`<button class="chip ${!have.has(k)?'bad':off.has(k)?'off':'ok'}" data-s="${k}" title="${k}: ${!have.has(k)?'джерело недоступне':off.has(k)?'вимкнено, натисни щоб увімкнути':'увімкнено, натисни щоб вимкнути'}">${SHORT[k]||k}</button>`).join('');
 }
 function render(){renderSrc();renderDb();renderCal();renderDay()}
 
@@ -693,7 +709,7 @@ async function dbLoad(){
 function renderDb(){
   const e=$('#db'),m=dbState.mode;
   e.className='chip '+(m==='sb'?'ok':m==='err'?'bad':'');
-  e.textContent=m==='sb'?'База: Supabase':m==='err'?'База: помилка':'База: локально';
+  e.textContent=m==='sb'?'Supabase':m==='err'?'Помилка бази':'Локально';
   e.title=m==='err'?dbState.msg:m==='sb'?'Справи зберігаються в Supabase':'Справи зберігаються лише в цьому браузері';
 }
 const lsSave=()=>{if(!sb)localStorage.wp_tasks=JSON.stringify(tasks)};
@@ -725,18 +741,10 @@ $('#src').onclick=e=>{
 };
 $('#pm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()-1,1);renderCal()};
 $('#nm').onclick=()=>{cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);renderCal()};
-/* вузькі екрани: календар і день по черзі, телефонна кнопка "назад" повертає до календаря */
-const narrow=()=>matchMedia('(max-width:699px)').matches;
-function setView(v,push){
-  $('main').dataset.view=v;
-  if(push&&v==='day'){try{history.pushState({v:'day'},'')}catch(e){}}
-}
-function goBack(){if(history.state&&history.state.v==='day')history.back();else setView('cal')}
-window.addEventListener('popstate',()=>setView('cal'));
 $('#cal').onclick=e=>{
   const b=e.target.closest('[data-d]');if(!b)return;
   sel=b.dataset.d;render();
-  if(narrow()){setView('day',true);window.scrollTo(0,0)}
+  if(matchMedia('(max-width:699px)').matches)$('#day .wx')?.scrollIntoView({block:'nearest',behavior:'smooth'});
 };
 $('#rf').onclick=async()=>{
   const b=$('#rf');b.disabled=true;b.textContent='Оновлюю…';
@@ -745,12 +753,6 @@ $('#rf').onclick=async()=>{
 };
 $('#day').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.back){goBack();return}
-  if(b.dataset.go){
-    const dt=new Date(sel+'T12:00');dt.setDate(dt.getDate()+Number(b.dataset.go));
-    sel=dt.toLocaleDateString('en-CA');cur=new Date(dt.getFullYear(),dt.getMonth(),1);
-    render();window.scrollTo(0,0);return;
-  }
   if(b.dataset.wx){wxOpen=!wxOpen;b.closest('.wx').classList.toggle('open',wxOpen);b.setAttribute('aria-expanded',String(wxOpen));return}
   if(b.dataset.dn){const t=tasks.find(x=>x.id==b.dataset.dn);await dbSet(t.id,{done:!t.done})}
   else if(b.dataset.rm)await dbDel(b.dataset.rm);
