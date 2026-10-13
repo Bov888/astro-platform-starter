@@ -133,7 +133,7 @@ main{flex:1;min-height:0;display:grid;gap:14px;grid-template-columns:1fr}
 .c.s2{border-color:color-mix(in srgb,var(--go) 70%,var(--line));background:color-mix(in srgb,var(--go) 13%,var(--card))}
 .c.s1{border-color:color-mix(in srgb,var(--maybe) 75%,var(--line));background:color-mix(in srgb,var(--maybe) 13%,var(--card))}
 .c.s0{border-color:color-mix(in srgb,var(--no) 45%,var(--line));background:color-mix(in srgb,var(--no) 7%,var(--card))}
-.c.sn{opacity:.5}
+.c.sn{background:transparent;border-color:color-mix(in srgb,var(--line) 55%,transparent);opacity:.7}
 .c.sel{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--acc)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 0;padding:0;list-style:none;font-size:12.5px;color:var(--mut);flex:none}
 .legend li{display:flex;align-items:center;gap:6px}
@@ -205,7 +205,10 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .alt{margin-top:4px;font-size:13px;color:var(--mut)}
 .alt .gh{min-height:28px;padding:2px 10px;margin-left:4px}
 .fh{display:flex;align-items:center;gap:8px;margin:14px 0 8px;font-size:15px;font-weight:600}
-.ft{display:flex;justify-content:space-between;gap:10px;border-left:4px solid var(--maybe)}
+.ft{display:block;border-left:4px solid var(--maybe)}
+.tr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.tr .pill{margin-top:1px}
+.tt::first-letter{text-transform:uppercase}
 .ft[data-p="1"]{border-left-color:var(--no)}.ft[data-p="3"]{border-left-color:var(--go)}
 .pill{flex:none;align-self:flex-start;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--mut);white-space:nowrap}
 #add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 68px auto;gap:8px;margin-top:10px;flex:none}
@@ -277,14 +280,14 @@ tr.off td{opacity:.45;text-decoration:line-through}
   #add{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 64px}
   #add input[name=title]{grid-column:1/-1}
   #add .pri{grid-column:1/-1;grid-row:auto;min-height:42px;padding:6px 12px}
-  .ft{flex-direction:column}
   .pill{align-self:flex-start}
   .two{grid-template-columns:1fr 1fr}
   .bar{flex-wrap:wrap;overflow:visible;margin:0;padding:0;gap:6px}
   #pf{order:1;flex:1 1 120px}
   #rf{order:2}
   #db{order:3}
-  #src{order:4;flex:1 1 100%;flex-wrap:wrap;gap:5px}
+  #src{order:4;flex:0 1 auto;flex-wrap:wrap;gap:5px}
+  .ul{display:none}
   #upd{order:5;font-size:12px}
   .chip{padding:2px 9px;font-size:11.5px;min-height:26px}
   .cn em{position:absolute;top:6px;right:6px;width:8px;height:8px;min-width:0;padding:0;font-size:0;border-radius:50%}
@@ -694,11 +697,10 @@ function famHtml(){
   return h+famTasks.map(t=>{
     const m=famMeta[t.id]||{},p=m.profile||pf;
     const i=m.kind?taskInfo({kind:m.kind,profile:p,date:sel,duration:1}):null;
-    return `<div class="ft" data-p="${t.priority}"><div class="tb"><b class="tt">${esc(t.text)}</b>`+
+    return `<div class="ft" data-p="${t.priority}"><div class="tb"><div class="tr"><b class="tt">${esc(t.text)}</b><span class="pill">${FS[t.status]||esc(t.status)}</span></div>`+
       `<div class="tm"><select data-fk="${t.id}" aria-label="Вид"><option value=""${m.kind?'':' selected'}>Вид…</option>${kindOpts(m.kind)}</select>`+
       (m.kind==='out'?`<select data-fp="${t.id}" aria-label="Категорія">${profOpts(p)}</select>`:'')+`</div>`+
-      (i?`<div class="ti ${i.c}"><i class="dot"></i><span>${i.txt}</span></div>`:'')+`</div>`+
-      `<span class="pill">${FS[t.status]||esc(t.status)}</span></div>`;
+      (i?`<div class="ti ${i.c}"><i class="dot"></i><span>${i.txt}</span></div>`:'')+`</div></div>`;
   }).join('');
 }
 
@@ -862,7 +864,7 @@ async function init(){
   sb=(cfg.url&&cfg.key&&window.supabase)?supabase.createClient(cfg.url,cfg.key):null;
   await Promise.all([loadWeather(),dbLoad(),famLoad()]);
   await metaLoad();
-  $('#upd').textContent=Object.keys(H).length?'Оновлено '+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}):'Прогноз не завантажено';
+  $('#upd').innerHTML=Object.keys(H).length?'<span class="ul">Оновлено </span>'+new Date().toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}):'Прогноз не завантажено';
   render();
 }
 setTheme(document.documentElement.dataset.theme);
