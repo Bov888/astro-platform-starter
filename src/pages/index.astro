@@ -127,11 +127,11 @@ main{flex:1;min-height:0;display:grid;gap:14px;grid-template-columns:1fr}
 .c em{font-style:normal;font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;display:inline-grid;place-items:center;border-radius:99px;background:var(--acc);color:var(--on)}
 .bt{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
 .tp{display:flex;align-items:center;gap:4px;font-weight:600;font-size:clamp(13px,1.9vh,16px);line-height:1.2}
-.tp .ic{color:var(--rain)}
+.tp .ic{width:1.25em;height:1.25em}
 .sun{display:flex;align-items:center;gap:3px;font-size:clamp(10px,1.45vh,12px);line-height:1.2;color:var(--mut);white-space:nowrap;overflow:hidden}
 .sun .ic{color:var(--sun);display:none}
 @container (max-width:96px){.sun{display:none}}
-@container (min-width:126px){.sun .ic{display:inline-block}}
+@container (min-width:112px){.sun .ic{display:inline-block}}
 .c.s2{border-color:color-mix(in srgb,var(--go) 70%,var(--line));background:color-mix(in srgb,var(--go) 13%,var(--card))}
 .c.s1{border-color:color-mix(in srgb,var(--maybe) 75%,var(--line));background:color-mix(in srgb,var(--maybe) 13%,var(--card))}
 .c.s0{border-color:color-mix(in srgb,var(--no) 45%,var(--line));background:color-mix(in srgb,var(--no) 7%,var(--card))}
@@ -227,6 +227,14 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .dnav .back,.dnav .nv{display:none}
 .wsum{display:none;width:100%;min-height:44px;margin-top:10px;padding:8px 12px;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:12px;font-size:14px}
 .wsum .ti{margin:0;font-size:14px;font-weight:500}
+.wsum .ic,.agw .ic,.cond .ic{vertical-align:-.25em}
+.wsum .ic{width:18px;height:18px}
+.cond{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+.cond .ic{width:22px;height:22px}
+.wi-clear,.wi-pcloud{color:var(--sun)}
+.wi-cloud,.wi-fog{color:var(--mut)}
+.wi-drizzle,.wi-rain,.wi-snow{color:var(--rain)}
+.wi-storm{color:var(--maybe)}
 .chv{width:18px;height:18px;flex:none;fill:none;stroke:var(--mut);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
 .wx.open .chv{transform:rotate(180deg)}
 .dsec{margin:4px 0 8px}
@@ -245,7 +253,7 @@ tr.off td{opacity:.45;text-decoration:line-through}
 .agd::first-letter{text-transform:uppercase}
 .agw{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:13px;color:var(--mut)}
 .agw .ti{margin:0}
-.agw .ic{color:var(--rain)}
+.agw .ic{width:16px;height:16px}
 .ago{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--no)}
 .ar{display:flex;align-items:flex-start;gap:10px;padding:5px 6px}
 .ao{flex:1;min-width:0;display:block;min-height:0;padding:0;border:0;background:transparent;text-align:left}
@@ -449,7 +457,7 @@ const SOURCES=['OM-ECMWF','OM-GFS','OM-ICON','MET.no'];
 const DOW=['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
 const MON=['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
 let cfg=Object.assign({lat:48.53,lon:25.04,url:'',key:'',furl:'',fkey:'',fperson:'Олександр'},JSON.parse(localStorage.wp_cfg||'{}'));
-let H={},SUN={},TZ='Europe/Kyiv',tasks=[],sb=null,pf='run',cur=new Date(),FMT=null;
+let H={},SUN={},WC={},TZ='Europe/Kyiv',tasks=[],sb=null,pf='run',cur=new Date(),FMT=null;
 let today=new Date().toLocaleDateString('en-CA'),sel=today;
 let off=new Set(JSON.parse(localStorage.wp_off||'[]'));
 
@@ -486,12 +494,13 @@ function local(dt){
 function put(d,h,src,t,p,w){((H[d]??={})[h]??={})[src]={t,p:p||0,w:w||0}}
 
 async function loadWeather(){
-  H={};SUN={};FMT=null;note('');
+  H={};SUN={};WC={};FMT=null;note('');
   const {lat,lon}=cfg;
   try{
-    const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset&timezone=auto&past_days=1&forecast_days=10`)).json();
+    const j=await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise,sunset,weather_code&timezone=auto&past_days=1&forecast_days=10`)).json();
     TZ=j.timezone;today=local(new Date())[0];
     j.daily.time.forEach((d,i)=>SUN[d]={sr:hm(j.daily.sunrise[i]),ss:hm(j.daily.sunset[i])});
+    j.daily.weather_code?.forEach((c,i)=>{WC[j.daily.time[i]]=c});
   }catch(e){note('Не вдалося отримати схід і захід сонця.')}
   const models=['ecmwf_ifs025','gfs_seamless','icon_seamless'];
   try{
@@ -578,6 +587,25 @@ const IC={
   rain:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg>'
 };
 const STW={2:'є вікно',1:'джерела розходяться',0:'вікон немає'};
+/* погодні іконки: код WMO -> вид; якщо моделі дають дощ, а код ні, показуємо дощ */
+const WK={clear:'Ясно',pcloud:'Мінлива хмарність',cloud:'Хмарно',fog:'Туман',drizzle:'Мряка',rain:'Дощ',snow:'Сніг',storm:'Гроза'};
+const WI={
+  clear:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  pcloud:'<circle cx="8.5" cy="8.5" r="3"/><path d="M8.5 2.5v1.2M2.5 8.5h1.2M4.3 4.3l.85.85M12.7 4.3l-.85.85"/><path d="M19 19H11a3.5 3.5 0 0 1-.2-7A5 5 0 0 1 20 13.5 2.75 2.75 0 0 1 19 19z"/>',
+  cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
+  fog:'<path d="M4 8h16M6 12h14M4 16h13M8 20h10"/>',
+  drizzle:'<path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 21v2M12 15v2"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>',
+  rain:'<path d="M16 13v8M8 13v8M12 15v8"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>',
+  snow:'<path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><path d="M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"/>',
+  storm:'<path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><path d="M13 11l-4 6h6l-4 6"/>'
+};
+function wxKind(d,inf){
+  const c=WC[d];let k=null;
+  if(c!=null)k=c===0?'clear':c<=2?'pcloud':c===3?'cloud':c<=48?'fog':c<=57?'drizzle':c<=67?'rain':c<=77?'snow':c<=82?'rain':c<=86?'snow':'storm';
+  if(inf&&inf.rain>=0.5&&!['drizzle','rain','snow','storm'].includes(k))k='rain';
+  return k;
+}
+const wIcon=k=>k?`<svg class="ic wi wi-${k}" viewBox="0 0 24 24" aria-hidden="true">${WI[k]}</svg>`:'';
 
 function renderCal(){
   const y=cur.getFullYear(),m=cur.getMonth();
@@ -589,10 +617,10 @@ function renderCal(){
   for(let d=1;d<=nd;d++){
     const ds=`${y}-${pad(m+1)}-${pad(d)}`,w=win(ds,pf,2),inf=dayInfo(ds),sn=SUN[ds];
     const nt=tasks.filter(t=>t.date===ds&&!t.done).length;
-    const lbl=`${fmtDate(ds)}. ${STW[w.st]||'прогнозу ще немає'}.`+(inf?` До ${Math.round(inf.tmax)}°${inf.rain>=0.5?', дощ':''}.`:'')+(nt?` Справ: ${nt}.`:'');
+    const lbl=`${fmtDate(ds)}. ${STW[w.st]||'прогнозу ще немає'}.`+(inf?` До ${Math.round(inf.tmax)}°${wxKind(ds,inf)?', '+WK[wxKind(ds,inf)].toLowerCase():''}.`:'')+(nt?` Справ: ${nt}.`:'');
     h+=`<button type="button" class="c s${w.st==null?'n':w.st}${ds===sel?' sel':''}${ds===today?' td':''}" data-d="${ds}" aria-label="${lbl}" aria-pressed="${ds===sel}"${ds===today?' aria-current="date"':''}>`+
        `<span class="cn"><b>${d}</b>`+(sn?`<span class="sun" title="Схід і захід сонця">${IC.sun}${fh(sn.sr)}–${fh(sn.ss)}</span>`:'')+`</span>`+
-       `<span class="bt"><span class="tp${inf&&inf.rain>=0.5?' rn':''}">${inf?Math.round(inf.tmax)+'°'+(inf.rain>=0.5?IC.rain:''):'&nbsp;'}</span>`+
+       `<span class="bt"><span class="tp${inf&&inf.rain>=0.5?' rn':''}">${inf?Math.round(inf.tmax)+'°'+wIcon(wxKind(ds,inf)):'&nbsp;'}</span>`+
        (nt?`<em title="Справ: ${nt}">${nt}</em>`:'')+`</span></button>`;
   }
   $('#cal').innerHTML=h;
@@ -622,8 +650,9 @@ function renderDay(){
     `<div class="dtw"><h2 class="dt"><span class="dl">${dlong}</span><span class="ds">${dshort}</span></h2>${d===today?'<span class="tag">Сьогодні</span>':''}</div>`+
     `<button type="button" class="ib nv" data-go="-1" aria-label="Попередній день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>`+
     `<button type="button" class="ib nv" data-go="1" aria-label="Наступний день"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></div>`+
-    `<button type="button" class="wsum" data-wx="1" aria-expanded="${wxOpen}"><span class="ti ${w2.st==null?'n':'s'+w2.st}"><i class="dot"></i><span>${inf0?Math.round(inf0.tmax)+'° · ':''}${sw}</span></span><svg class="chv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`+
+    `<button type="button" class="wsum" data-wx="1" aria-expanded="${wxOpen}"><span class="ti ${w2.st==null?'n':'s'+w2.st}"><i class="dot"></i><span>${inf0?wIcon(wxKind(d,inf0))+' '+Math.round(inf0.tmax)+'° · ':''}${sw}</span></span><svg class="chv" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>`+
     `<div class="wxb">`;
+  {const k=wxKind(d,inf0);if(k)h+=`<p class="cond">${wIcon(k)}<span>${WK[k]}${inf0?', '+Math.round(inf0.tmax)+'°':''}</span></p>`}
   if(s){
     const L=s.ss-s.sr,tm=Math.round(L*60),pv=SUN[new Date(new Date(d+'T12:00').getTime()-864e5).toLocaleDateString('en-CA')];
     const dl=pv?Math.round((L-(pv.ss-pv.sr))*60):null;
@@ -689,7 +718,7 @@ function renderAgenda(){
     const list=tasks.filter(t=>t.date===ds&&!t.done),inf=dayInfo(ds),w=win(ds,pf,2);
     const sw=w.st==null?'прогнозу ще немає':w.st>0?rng(w.r):'вікон немає';
     h+=`<section class="ag"><button type="button" class="agh" data-d="${ds}"><span class="agd">${ds===today?'Сьогодні, '+dayMonth(ds):fmtDate(ds)}</span>`+
-       `<span class="agw">${inf?Math.round(inf.tmax)+'°'+(inf.rain>=0.5?IC.rain:'')+' · ':''}<span class="ti ${w.st==null?'n':'s'+w.st}"><i class="dot"></i><span>${P.n}: ${sw}</span></span></span></button>`+
+       `<span class="agw">${inf?wIcon(wxKind(ds,inf))+' '+Math.round(inf.tmax)+'° · ':''}<span class="ti ${w.st==null?'n':'s'+w.st}"><i class="dot"></i><span>${P.n}: ${sw}</span></span></span></button>`+
        (list.length?list.map(t=>agRow(t,false)).join(''):'<p class="mut ag0">Справ немає</p>')+`</section>`;
   }
   $('#agenda').innerHTML=h;
